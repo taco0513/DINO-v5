@@ -47,7 +47,7 @@ export default function CalendarFullView({ stays, countries, loading }: Calendar
     
     return stays.filter(stay => {
       const entryDate = new Date(stay.entryDate)
-      const exitDate = new Date(stay.exitDate)
+      const exitDate = stay.exitDate ? new Date(stay.exitDate) : new Date() // Use today for ongoing stays
       return date >= entryDate && date <= exitDate
     })
   }
@@ -156,7 +156,7 @@ export default function CalendarFullView({ stays, countries, loading }: Calendar
                     <div
                       key={stay.id}
                       className={`text-xs px-2 py-1 rounded border ${getCountryColor(stay.countryCode)}`}
-                      title={`${country?.name} (${stay.purpose})`}
+                      title={`${country?.name}${stay.notes ? ` (${stay.notes})` : ''}`}
                     >
                       {country?.flag} {country?.name}
                     </div>

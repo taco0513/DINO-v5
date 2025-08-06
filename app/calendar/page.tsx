@@ -43,16 +43,10 @@ import CountryFilter from '@/components/calendar/CountryFilter'
 import VisaWarnings from '@/components/calendar/VisaWarnings'
 import VisaWindows from '@/components/calendar/VisaWindows'
 import CalendarCountryFilter from '@/components/calendar/CalendarCountryFilter'
-
-const countries: Country[] = [
-  { code: 'KR', name: '한국', flag: '🇰🇷' },
-  { code: 'JP', name: '일본', flag: '🇯🇵' },
-  { code: 'TH', name: '태국', flag: '🇹🇭' },
-  { code: 'VN', name: '베트남', flag: '🇻🇳' },
-]
+import { countries } from '@/lib/data/countries-and-airports'
 
 export default function CalendarPage() {
-  const [selectedCountries, setSelectedCountries] = useState<string[]>(['KR', 'JP', 'TH', 'VN'])
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([])
   const [stays, setStays] = useState<Stay[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState(0) // 0: Calendar View, 1: Manage Stays
@@ -97,7 +91,7 @@ export default function CalendarPage() {
   }
 
   const filteredStays = stays.filter(stay => 
-    selectedCountries.includes(stay.countryCode)
+    selectedCountries.length === 0 || selectedCountries.includes(stay.countryCode)
   )
 
   return (

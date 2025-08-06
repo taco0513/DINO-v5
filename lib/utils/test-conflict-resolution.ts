@@ -158,7 +158,7 @@ export function runAllTests() {
 
 // Browser console helper
 if (typeof window !== 'undefined') {
-  (window as any).testConflictResolution = runConflictResolutionTest
-  (window as any).testAllConflicts = runAllTests
+  (window as any).testConflictResolution = runConflictResolutionTest as any
+  (window as any).testAllConflicts = runAllTests as any
   console.log('💡 Run window.testConflictResolution() or window.testAllConflicts() in browser console to test!')
 }

@@ -20,7 +20,6 @@ import {
 import { 
   detectDateConflicts, 
   autoResolveConflicts,
-  getManualResolutionSuggestions,
   validateResolution,
   type DateConflict,
   type ResolvedStay

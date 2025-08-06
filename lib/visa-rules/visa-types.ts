@@ -100,7 +100,7 @@ export const visaTypesByCountry: { [countryCode: string]: { [nationality: string
 }
 
 // Get available visa types for a specific country and nationality
-export function getAvailableVisaTypes(countryCode: string, nationality: string = 'US'): VisaTypeInfo[] {
+export function getAvailableVisaTypes(countryCode: string, nationality: string = 'US', userEmail?: string): VisaTypeInfo[] {
   const countryVisaTypes = visaTypesByCountry[countryCode]
   if (!countryVisaTypes) {
     // Default visa types if country not found
@@ -130,5 +130,17 @@ export function getAvailableVisaTypes(countryCode: string, nationality: string =
     ]
   }
   
-  return nationalityVisaTypes
+  let visaTypes = [...nationalityVisaTypes]
+  
+  // Add special visa types for specific users - insert at the beginning as default
+  if (userEmail === 'zbrianjin@gmail.com' && countryCode === 'KR') {
+    visaTypes.unshift({
+      value: 'long-term-resident',
+      label: 'Long-term Resident (183 days)',
+      duration: '183 days within 365-day rolling window',
+      description: 'Special long-term resident status'
+    })
+  }
+  
+  return visaTypes
 }

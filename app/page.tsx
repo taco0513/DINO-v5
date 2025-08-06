@@ -26,17 +26,11 @@ import { Country, Stay } from '@/lib/types'
 import { getStays } from '@/lib/supabase/stays'
 import { loadStaysFromStorage, saveStaysToStorage } from '@/lib/storage/stays-storage'
 import { detectDateConflicts, autoResolveConflicts } from '@/lib/utils/date-conflict-resolver'
-
-const countries: Country[] = [
-  { code: 'KR', name: '한국', flag: '🇰🇷' },
-  { code: 'JP', name: '일본', flag: '🇯🇵' },
-  { code: 'TH', name: '태국', flag: '🇹🇭' },
-  { code: 'VN', name: '베트남', flag: '🇻🇳' },
-]
+import { countries } from '@/lib/data/countries-and-airports'
 
 export default function Home() {
-  const [selectedCountry, setSelectedCountry] = useState<string>('KR')
-  const [selectedCountries, setSelectedCountries] = useState<string[]>(['KR', 'JP', 'TH', 'VN'])
+  const [selectedCountry, setSelectedCountry] = useState<string>('')
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([])
   const [stays, setStays] = useState<Stay[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -47,19 +41,30 @@ export default function Home() {
   const loadAllStays = async () => {
     setLoading(true)
     try {
-      // Load from localStorage first
-      let data = loadStaysFromStorage()
+      let data: Stay[] = []
       
-      // If no local data, try Supabase
-      if (data.length === 0) {
-        try {
-          data = await getStays()
-          // Save to localStorage for future use
+      // Try Supabase first for most up-to-date data
+      try {
+        console.log('📡 Loading from Supabase...')
+        data = await getStays()
+        
+        if (data.length > 0) {
+          console.log(`✅ Loaded ${data.length} stays from Supabase`)
+          // Save to localStorage as backup
+          saveStaysToStorage(data)
+        } else {
+          console.log('📊 No data in Supabase, checking localStorage...')
+          // If Supabase is empty, check localStorage
+          data = loadStaysFromStorage()
           if (data.length > 0) {
-            saveStaysToStorage(data)
+            console.log(`💾 Using ${data.length} stays from localStorage backup`)
           }
-        } catch (supabaseError) {
-          console.warn('Supabase not available, using localStorage only:', supabaseError)
+        }
+      } catch (supabaseError) {
+        console.warn('⚠️ Supabase unavailable, using localStorage:', supabaseError)
+        data = loadStaysFromStorage()
+        if (data.length > 0) {
+          console.log(`💾 Using ${data.length} stays from localStorage`)
         }
       }
       
@@ -167,7 +172,7 @@ export default function Home() {
                       Countries Visited
                     </Typography>
                     <Typography variant="h4" fontWeight={500}>
-                      {[...new Set(stays.map(s => s.countryCode))].length}
+                      {stays.length > 0 ? [...new Set(stays.map(s => s.countryCode))].length : 0}
                     </Typography>
                   </Stack>
                 </Paper>
@@ -192,12 +197,29 @@ export default function Home() {
                       Total Days Traveled
                     </Typography>
                     <Typography variant="h4" fontWeight={500}>
-                      {stays.reduce((acc, stay) => {
-                        const days = stay.exitDate 
-                          ? Math.ceil((new Date(stay.exitDate).getTime() - new Date(stay.entryDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
-                          : Math.ceil((new Date().getTime() - new Date(stay.entryDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
-                        return acc + days
-                      }, 0)}
+                      {stays.length > 0 ? stays.reduce((acc, stay) => {
+                        try {
+                          // Validate dates first
+                          if (!stay.entryDate || isNaN(new Date(stay.entryDate).getTime())) {
+                            return acc
+                          }
+                          
+                          const entryDate = new Date(stay.entryDate)
+                          let days = 0
+                          
+                          if (stay.exitDate && !isNaN(new Date(stay.exitDate).getTime())) {
+                            const exitDate = new Date(stay.exitDate)
+                            days = Math.ceil((exitDate.getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+                          } else {
+                            days = Math.ceil((new Date().getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+                          }
+                          
+                          return acc + (days > 0 ? days : 0)
+                        } catch (error) {
+                          console.error('Error calculating days for stay:', stay, error)
+                          return acc
+                        }
+                      }, 0) : 0}
                     </Typography>
                   </Stack>
                 </Paper>
@@ -219,6 +241,7 @@ export default function Home() {
                 />
               </Grid>
             </Grid>
+
 
             {/* Recent Activity */}
             <StaysList 

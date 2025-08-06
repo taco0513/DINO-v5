@@ -20,16 +20,18 @@ export interface VisaCalculationContext {
   nationality: string
   referenceDate?: Date // Default to today
   lookbackDays?: number // Default to 365 days
+  userEmail?: string // For user-specific rules
 }
 
 // Calculate visa status for a specific country
 export function calculateVisaStatus(
   countryCode: string, 
   stays: Stay[], 
-  context: VisaCalculationContext
+  context: VisaCalculationContext,
+  visaType?: string
 ): VisaStatus {
-  const { nationality, referenceDate = new Date(), lookbackDays = 365 } = context
-  const rule = getVisaRules(nationality, countryCode)
+  const { nationality, referenceDate = new Date(), lookbackDays = 365, userEmail } = context
+  const rule = getVisaRules(nationality, countryCode, visaType, userEmail)
   
   if (!rule) {
     return {
@@ -208,7 +210,7 @@ export function validateNewStay(
     countryCode: newStay.countryCode,
     entryDate: newStay.entryDate,
     exitDate: newStay.exitDate,
-    purpose: newStay.purpose || 'tourism'
+    notes: (newStay as any).notes || 'tourism'
   }
 
   const allStays = [...existingStays, tempStay]

@@ -37,6 +37,18 @@ export default function CountryFilter({ countries, stays, selectedCountries, onS
   if (stays.length === 0) {
     return null
   }
+  
+  // Only show countries that have actual stay records
+  const countriesWithStays = Array.from(new Set(stays.map(stay => stay.countryCode)))
+  const availableCountries = countries.filter(country => 
+    countriesWithStays.includes(country.code)
+  )
+  
+  // Don't show the filter if there are no countries with stays
+  if (availableCountries.length === 0) {
+    return null
+  }
+  
   const [isOpen, setIsOpen] = useState(false)
 
   const handleToggleCountry = (countryCode: string) => {
@@ -52,10 +64,10 @@ export default function CountryFilter({ countries, stays, selectedCountries, onS
   }
 
   const handleSelectAll = () => {
-    onSelectionChange(countries.map(country => country.code))
+    onSelectionChange(availableCountries.map(country => country.code))
   }
 
-  const isAllSelected = selectedCountries.length === countries.length
+  const isAllSelected = selectedCountries.length === availableCountries.length
 
   return (
     <Box sx={cardBoxStyle}>
@@ -80,7 +92,7 @@ export default function CountryFilter({ countries, stays, selectedCountries, onS
           >
             {selectedCountries.length === 0 
               ? 'Showing all countries' 
-              : `${selectedCountries.length} of ${countries.length} selected`
+              : `${selectedCountries.length} of ${availableCountries.length} selected`
             }
           </Typography>
         </Box>
@@ -90,7 +102,7 @@ export default function CountryFilter({ countries, stays, selectedCountries, onS
       {/* Country Chips */}
       <Box sx={{ px: 3, pb: 3 }}>
         <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
-          {countries.map((country) => {
+          {availableCountries.map((country) => {
             const isSelected = selectedCountries.includes(country.code)
             return (
               <Chip

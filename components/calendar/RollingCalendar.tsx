@@ -37,6 +37,8 @@ import {
 } from '@mui/icons-material'
 import { Country, Stay } from '@/lib/types'
 import { cardBoxStyle } from '@/lib/styles/common'
+import { calculateAllVisaStatuses, calculateVisaStatus, type VisaCalculationContext } from '@/lib/visa-calculations/visa-engine'
+import { getCurrentUserEmail } from '@/lib/context/user'
 
 type ViewType = 'month' | 'week' | 'multi-month'
 
@@ -48,12 +50,56 @@ interface RollingCalendarProps {
   visaWindowCountry?: string | null  // Optional: specific country to show visa window for
 }
 
-// Visa rules for US passport holders
-const visaRules = {
-  'KR': { maxDays: 90, periodDays: 180, resetType: 'exit' as const, color: '#ffebee' },
-  'JP': { maxDays: 90, periodDays: 180, resetType: 'rolling' as const, color: '#e3f2fd' },
-  'TH': { maxDays: 30, periodDays: 180, resetType: 'exit' as const, color: '#fff3e0' },
-  'VN': { maxDays: 45, periodDays: 180, resetType: 'exit' as const, color: '#e8f5e9' }
+// Country colors for visual consistency
+const countryColors: Record<string, string> = {
+  'KR': '#ffebee',
+  'JP': '#e3f2fd', 
+  'TH': '#fff3e0',
+  'VN': '#e8f5e9',
+  'SG': '#f3e5f5',
+  'MY': '#fce4ec',
+  'ID': '#efebe9',
+  'HK': '#fff3e0',
+  'TW': '#eceff1',
+  'PH': '#fffde7',
+  'IN': '#fff8e1',
+  'CN': '#ffebee',
+  'US': '#e3f2fd',
+  'GB': '#f3e5f5',
+  'FR': '#ede7f6', // Schengen
+  'DE': '#f5f5f5', // Schengen
+  'IT': '#e0f2f1', // Schengen
+  'ES': '#e0f2f1', // Schengen
+  'NL': '#f1f8e9', // Schengen
+  'CH': '#f9fbe7', // Schengen
+  'AT': '#fffde7', // Schengen
+  'BE': '#fff3e0', // Schengen
+  'SE': '#fff3e0', // Schengen
+  'NO': '#efebe9', // Schengen
+  'DK': '#eceff1', // Schengen
+  'FI': '#f3e5f5', // Schengen
+  'AU': '#fce4ec',
+  'NZ': '#e8f5e9',
+  'CA': '#ffebee',
+  'MX': '#fff3e0',
+  'BR': '#e8f5e9',
+  'AR': '#e3f2fd',
+  'CL': '#f3e5f5',
+  'PE': '#fff3e0',
+  'CO': '#fffde7',
+  'EC': '#f1f8e9',
+  'UY': '#eceff1',
+  'ZA': '#ffebee',
+  'EG': '#e3f2fd',
+  'MA': '#fff3e0',
+  'TR': '#ffebee',
+  'GR': '#e3f2fd', // Schengen
+  'RU': '#fffde7',
+  'IL': '#fff3e0',
+  'JO': '#f1f8e9',
+  'AE': '#fff3e0',
+  'QA': '#e8f5e9',
+  'SA': '#f9fbe7'
 }
 
 export default function RollingCalendar({ 
@@ -64,9 +110,63 @@ export default function RollingCalendar({
   visaWindowCountry 
 }: RollingCalendarProps) {
   const theme = useTheme()
+  const [userEmail] = useState(getCurrentUserEmail())
   
   // Week start setting (0 = Sunday, 1 = Monday)
   const [weekStartsOn, setWeekStartsOn] = useState<0 | 1>(1)
+  
+  // Calculate visa statuses using proper engine
+  const visaStatuses = useMemo(() => {
+    if (!stays.length) return []
+    
+    const context: VisaCalculationContext = {
+      nationality: 'US',
+      referenceDate: new Date(),
+      userEmail
+    }
+    
+    return calculateAllVisaStatuses(stays, context)
+  }, [stays, userEmail])
+  
+  // Helper function to get visa rule for a country
+  const getVisaRule = (countryCode: string) => {
+    // For Korea, if user has long-term-resident visa type stays, use that rule
+    if (countryCode === 'KR' && userEmail === 'zbrianjin@gmail.com') {
+      const koreaStays = stays.filter(s => s.countryCode === 'KR')
+      const hasLongTermStay = koreaStays.some(s => s.visaType === 'long-term-resident')
+      
+      if (hasLongTermStay) {
+        // Calculate with long-term-resident visa type
+        const context: VisaCalculationContext = {
+          nationality: 'US',
+          referenceDate: new Date(),
+          userEmail
+        }
+        
+        const longTermStatus = calculateVisaStatus('KR', stays, context, 'long-term-resident')
+        if (longTermStatus.rule) {
+          return {
+            maxDays: longTermStatus.rule.maxDays,
+            periodDays: longTermStatus.rule.periodDays,
+            resetType: longTermStatus.rule.resetType,
+            color: countryColors[countryCode] || '#f5f5f5'
+          }
+        }
+      }
+    }
+    
+    // Default: use the calculated status from visaStatuses
+    const status = visaStatuses.find(s => s.countryCode === countryCode)
+    if (status?.rule) {
+      return {
+        maxDays: status.rule.maxDays,
+        periodDays: status.rule.periodDays,
+        resetType: status.rule.resetType,
+        color: countryColors[countryCode] || '#f5f5f5'
+      }
+    }
+    return null
+  }
   
   // Dynamic weekday headers based on week start setting
   const weekdayHeaders = useMemo(() => {
@@ -120,42 +220,67 @@ export default function RollingCalendar({
   // Generate 16 months rolling window
   const rollingMonths = useMemo(() => {
     const months = []
-    for (let i = 15; i >= 0; i--) {
-      const monthDate = new Date(endDate)
-      monthDate.setMonth(endDate.getMonth() - i)
-      months.push(monthDate)
+    try {
+      for (let i = 15; i >= 0; i--) {
+        const monthDate = new Date(endDate)
+        monthDate.setMonth(endDate.getMonth() - i)
+        
+        // Validate the generated date
+        if (!isNaN(monthDate.getTime())) {
+          months.push(monthDate)
+        }
+      }
+    } catch (error) {
+      console.error('Error generating rolling months:', error)
+      // Fallback to just current month if there's an error
+      months.push(new Date())
     }
     return months
   }, [endDate])
 
   // Get calendar days for a specific month (42 cells = 6 weeks)
   const getCalendarDaysForMonth = (monthDate: Date) => {
-    const monthStart = startOfMonth(monthDate)
-    const monthEnd = endOfMonth(monthDate)
-    
-    // Calculate padding based on week start setting
-    const firstDayOfMonth = monthStart.getDay()
-    const paddingDays = weekStartsOn === 1 
-      ? (firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1)  // Monday start: Sunday = 6 days padding
-      : firstDayOfMonth  // Sunday start: normal padding
-    
-    const calendarDays: (Date | null)[] = []
-    
-    // Pad with empty slots for previous month days
-    for (let i = 0; i < paddingDays; i++) {
-      calendarDays.push(null)
+    try {
+      // Validate input date
+      if (!monthDate || isNaN(monthDate.getTime())) {
+        console.warn('Invalid month date provided:', monthDate)
+        return Array(42).fill(null)
+      }
+
+      const monthStart = startOfMonth(monthDate)
+      const monthEnd = endOfMonth(monthDate)
+      
+      // Calculate padding based on week start setting
+      const firstDayOfMonth = monthStart.getDay()
+      const paddingDays = weekStartsOn === 1 
+        ? (firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1)  // Monday start: Sunday = 6 days padding
+        : firstDayOfMonth  // Sunday start: normal padding
+      
+      const calendarDays: (Date | null)[] = []
+      
+      // Pad with empty slots for previous month days
+      for (let i = 0; i < paddingDays; i++) {
+        calendarDays.push(null)
+      }
+      
+      // Add actual month days
+      const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd })
+      monthDays.forEach(day => {
+        if (day && !isNaN(day.getTime())) {
+          calendarDays.push(day)
+        }
+      })
+      
+      // Pad to complete 6 weeks (42 total cells)
+      while (calendarDays.length < 42) {
+        calendarDays.push(null)
+      }
+      
+      return calendarDays
+    } catch (error) {
+      console.error('Error generating calendar days for month:', monthDate, error)
+      return Array(42).fill(null)
     }
-    
-    // Add actual month days
-    const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd })
-    monthDays.forEach(day => calendarDays.push(day))
-    
-    // Pad to complete 6 weeks (42 total cells)
-    while (calendarDays.length < 42) {
-      calendarDays.push(null)
-    }
-    
-    return calendarDays
   }
 
   // Get week days for week view
@@ -179,7 +304,7 @@ export default function RollingCalendar({
     if (!visaWindowCountry) return windows
     
     const countryCode = visaWindowCountry
-    const rule = visaRules[countryCode as keyof typeof visaRules]
+    const rule = getVisaRule(countryCode)
     if (!rule) return windows
     
     windows[countryCode] = []
@@ -192,11 +317,15 @@ export default function RollingCalendar({
     } else {
       // Exit reset (e.g., Korea, Thailand, Vietnam)
       // Show windows for each stay
-      const countryStays = stays.filter(stay => stay.countryCode === countryCode)
+      const countryStays = stays.filter(stay => stay.countryCode === countryCode && stay.entryDate)
       countryStays.forEach(stay => {
         const stayStart = new Date(stay.entryDate)
         const stayEnd = stay.exitDate ? new Date(stay.exitDate) : today
-        windows[countryCode].push({ start: stayStart, end: stayEnd })
+        
+        // Only add if dates are valid
+        if (!isNaN(stayStart.getTime()) && !isNaN(stayEnd.getTime())) {
+          windows[countryCode].push({ start: stayStart, end: stayEnd })
+        }
       })
     }
     
@@ -223,7 +352,7 @@ export default function RollingCalendar({
   const getDayBackgroundColor = (day: Date) => {
     const visaWindow = getDayVisaWindow(day)
     if (visaWindow) {
-      const rule = visaRules[visaWindow as keyof typeof visaRules]
+      const rule = getVisaRule(visaWindow)
       return rule?.color || 'transparent'
     }
     return 'transparent'
@@ -236,34 +365,196 @@ export default function RollingCalendar({
       if (visaWindowCountry) {
         if (stay.countryCode !== visaWindowCountry) return false
       } else {
-        // Otherwise, show stays for all selected countries
-        if (!selectedCountries.includes(stay.countryCode)) return false
+        // Otherwise, show stays for selected countries, or all countries if none selected
+        if (selectedCountries.length > 0 && !selectedCountries.includes(stay.countryCode)) return false
       }
+      
+      // Validate stay dates
+      if (!stay.entryDate) return false
       
       const entryDate = new Date(stay.entryDate)
       // If no exit date, use today as the end date (ongoing stay)
       const exitDate = stay.exitDate ? new Date(stay.exitDate) : new Date()
       
+      // Check for invalid dates
+      if (isNaN(entryDate.getTime()) || isNaN(exitDate.getTime())) return false
+      
       // Reset times to compare dates only
-      entryDate.setHours(0, 0, 0, 0)
-      exitDate.setHours(23, 59, 59, 999)
+      const entryDateOnly = new Date(entryDate)
+      entryDateOnly.setHours(0, 0, 0, 0)
+      
+      const exitDateOnly = new Date(exitDate)
+      exitDateOnly.setHours(23, 59, 59, 999)
+      
       const checkDay = new Date(day)
       checkDay.setHours(12, 0, 0, 0)
       
       // Check if the day is within the stay period (inclusive)
-      return checkDay >= entryDate && checkDay <= exitDate
+      return checkDay >= entryDateOnly && checkDay <= exitDateOnly
     })
   }
 
-  // Get country color for visual indicators
+  // Get country color for visual indicators - Generate colors based on country code
   const getCountryColor = (countryCode: string) => {
-    const colors: Record<string, string> = {
+    const predefinedColors: Record<string, string> = {
       KR: '#ef5350', // Red
       JP: '#1976d2', // Blue 
       TH: '#ff9800', // Orange
-      VN: '#4caf50'  // Green
+      VN: '#4caf50', // Green
+      SG: '#9c27b0', // Purple
+      MY: '#e91e63', // Pink
+      ID: '#795548', // Brown
+      HK: '#ff5722', // Deep Orange
+      TW: '#607d8b', // Blue Grey
+      PH: '#ffeb3b', // Yellow
+      IN: '#ffc107', // Amber
+      CN: '#f44336', // Red
+      US: '#2196f3', // Blue
+      GB: '#3f51b5', // Indigo
+      FR: '#673ab7', // Deep Purple
+      DE: '#9e9e9e', // Grey
+      IT: '#00bcd4', // Cyan
+      ES: '#009688', // Teal
+      NL: '#8bc34a', // Light Green
+      CH: '#cddc39', // Lime
+      AT: '#ffeb3b', // Yellow
+      BE: '#ff9800', // Orange
+      SE: '#ff5722', // Deep Orange
+      NO: '#795548', // Brown
+      DK: '#607d8b', // Blue Grey
+      FI: '#9c27b0', // Purple
+      AU: '#e91e63', // Pink
+      NZ: '#4caf50', // Green
+      CA: '#f44336', // Red
+      MX: '#ff9800', // Orange
+      BR: '#4caf50', // Green
+      AR: '#2196f3', // Blue
+      CL: '#9c27b0', // Purple
+      PE: '#ff5722', // Deep Orange
+      CO: '#ffeb3b', // Yellow
+      EC: '#8bc34a', // Light Green
+      BO: '#795548', // Brown
+      UY: '#607d8b', // Blue Grey
+      PY: '#9e9e9e', // Grey
+      VE: '#e91e63', // Pink
+      GY: '#00bcd4', // Cyan
+      SR: '#009688', // Teal
+      GF: '#cddc39', // Lime
+      ZA: '#ef5350', // Red
+      EG: '#1976d2', // Blue
+      MA: '#ff9800', // Orange
+      TN: '#4caf50', // Green
+      DZ: '#9c27b0', // Purple
+      LY: '#e91e63', // Pink
+      SD: '#795548', // Brown
+      ET: '#ff5722', // Deep Orange
+      KE: '#ffeb3b', // Yellow
+      TZ: '#8bc34a', // Light Green
+      UG: '#607d8b', // Blue Grey
+      RW: '#9e9e9e', // Grey
+      GH: '#00bcd4', // Cyan
+      NG: '#009688', // Teal
+      CI: '#cddc39', // Lime
+      SN: '#ef5350', // Red
+      ML: '#1976d2', // Blue
+      BF: '#ff9800', // Orange
+      NE: '#4caf50', // Green
+      TD: '#9c27b0', // Purple
+      CF: '#e91e63', // Pink
+      CM: '#795548', // Brown
+      GQ: '#ff5722', // Deep Orange
+      GA: '#ffeb3b', // Yellow
+      CG: '#8bc34a', // Light Green
+      CD: '#607d8b', // Blue Grey
+      AO: '#9e9e9e', // Grey
+      ZM: '#00bcd4', // Cyan
+      ZW: '#009688', // Teal
+      BW: '#cddc39', // Lime
+      NA: '#ef5350', // Red
+      SZ: '#1976d2', // Blue
+      LS: '#ff9800', // Orange
+      MZ: '#4caf50', // Green
+      MW: '#9c27b0', // Purple
+      MG: '#e91e63', // Pink
+      MU: '#795548', // Brown
+      SC: '#ff5722', // Deep Orange
+      RU: '#ffeb3b', // Yellow
+      KZ: '#8bc34a', // Light Green
+      UZ: '#607d8b', // Blue Grey
+      TM: '#9e9e9e', // Grey
+      KG: '#00bcd4', // Cyan
+      TJ: '#009688', // Teal
+      AF: '#cddc39', // Lime
+      PK: '#ef5350', // Red
+      BD: '#1976d2', // Blue
+      LK: '#ff9800', // Orange
+      MV: '#4caf50', // Green
+      NP: '#9c27b0', // Purple
+      BT: '#e91e63', // Pink
+      MM: '#795548', // Brown
+      LA: '#ff5722', // Deep Orange
+      KH: '#ffeb3b', // Yellow
+      BN: '#8bc34a', // Light Green
+      MN: '#607d8b', // Blue Grey
+      KP: '#9e9e9e', // Grey
+      GE: '#00bcd4', // Cyan
+      AM: '#009688', // Teal
+      AZ: '#cddc39', // Lime
+      TR: '#ef5350', // Red
+      GR: '#1976d2', // Blue
+      BG: '#ff9800', // Orange
+      RO: '#4caf50', // Green
+      MD: '#9c27b0', // Purple
+      UA: '#e91e63', // Pink
+      BY: '#795548', // Brown
+      LT: '#ff5722', // Deep Orange
+      LV: '#ffeb3b', // Yellow
+      EE: '#8bc34a', // Light Green
+      PL: '#607d8b', // Blue Grey
+      CZ: '#9e9e9e', // Grey
+      SK: '#00bcd4', // Cyan
+      HU: '#009688', // Teal
+      SI: '#cddc39', // Lime
+      HR: '#ef5350', // Red
+      BA: '#1976d2', // Blue
+      RS: '#ff9800', // Orange
+      ME: '#4caf50', // Green
+      MK: '#9c27b0', // Purple
+      AL: '#e91e63', // Pink
+      XK: '#795548', // Brown (Kosovo)
+      IL: '#ff5722', // Deep Orange
+      PS: '#ffeb3b', // Yellow
+      JO: '#8bc34a', // Light Green
+      LB: '#607d8b', // Blue Grey
+      SY: '#9e9e9e', // Grey
+      IQ: '#00bcd4', // Cyan
+      IR: '#009688', // Teal
+      SA: '#cddc39', // Lime
+      YE: '#ef5350', // Red
+      OM: '#1976d2', // Blue
+      AE: '#ff9800', // Orange
+      QA: '#4caf50', // Green
+      BH: '#9c27b0', // Purple
+      KW: '#e91e63', // Pink
     }
-    return colors[countryCode] || '#9e9e9e'
+
+    // If predefined color exists, use it
+    if (predefinedColors[countryCode]) {
+      return predefinedColors[countryCode]
+    }
+    
+    // Otherwise, generate a color based on country code
+    let hash = 0
+    for (let i = 0; i < countryCode.length; i++) {
+      hash = countryCode.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    
+    // Convert hash to HSL color
+    const hue = Math.abs(hash) % 360
+    const saturation = 65 // Fixed saturation for consistency
+    const lightness = 50 // Fixed lightness for readability
+    
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`
   }
 
   // Navigation functions
@@ -659,7 +950,7 @@ export default function RollingCalendar({
                               width: 6,
                               height: 6,
                               borderRadius: '50%',
-                              backgroundColor: getCountryColor(stay.countryCode, new Date(day))
+                              backgroundColor: getCountryColor(stay.countryCode)
                             }}
                             title={`${countries.find(c => c.code === stay.countryCode)?.name}`}
                           />
@@ -780,7 +1071,7 @@ export default function RollingCalendar({
                                 opacity: 0.8
                               }
                             }}
-                            title={`${country?.name} - ${stay.purpose}`}
+                            title={`${country?.name}${stay.notes ? ` - ${stay.notes}` : ''}`}
                           >
                             <Typography variant="caption" sx={{ color: 'white', fontSize: '10px' }}>
                               {country?.flag} {country?.name}
@@ -865,7 +1156,7 @@ export default function RollingCalendar({
                 </Typography>
                 {(() => {
                   const country = countries.find(c => c.code === visaWindowCountry)
-                  const rule = visaRules[visaWindowCountry as keyof typeof visaRules]
+                  const rule = getVisaRule(visaWindowCountry)
                   if (!rule || !country) return null
                   
                   return (

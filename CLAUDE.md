@@ -62,10 +62,16 @@ DINO-v5/
 2. **Rolling Window (`rolling`)**: Days calculated within a moving window (Japan, Schengen)
 
 ### US Passport Holder Rules
-- **Korea (KR)**: 90 days per entry
+- **Korea (KR)**: 90 days per entry (Custom: 183 days within 365-day rolling window for zbrianjin@gmail.com)
 - **Japan (JP)**: 90 days within 180-day rolling window
 - **Thailand (TH)**: 30 days per entry (extendable by 30 days)
 - **Vietnam (VN)**: 45 days per entry
+
+### User-Specific Visa Rules
+- **zbrianjin@gmail.com**: Custom "Long-term Resident (183 days)" visa type for South Korea
+  - 183 days within any 365-day rolling window
+  - Takes precedence over standard Korea tourist visa
+  - Applied across dashboard, calendar, and visa calculations
 
 ## Database Schema (Supabase)
 
@@ -113,29 +119,67 @@ CREATE INDEX idx_stays_visa_type ON stays(visa_type);
 
 ## Key Implementation Details
 
+### Data Persistence Architecture (Enhanced)
+**Dual-Layer Persistence System:**
+1. **Primary Layer**: Supabase database for reliable cloud storage
+2. **Backup Layer**: localStorage for offline access and fallback scenarios
+3. **Auto-sync**: Automatic synchronization between both layers
+4. **Graceful degradation**: Continues working even when Supabase is unavailable
+
+**Loading Strategy:**
+- Load from Supabase first for most up-to-date data
+- Use localStorage backup if Supabase is empty or unavailable
+- Save all Supabase data to localStorage for offline access
+- Handle data validation and corruption recovery
+
+**Error Handling:**
+- Comprehensive date validation for corrupted data
+- Automatic data cleanup on load
+- Fallback mechanisms for all data operations
+- User-friendly error messages and recovery options
+
 ### From/To Travel Structure
 - **From Country**: Optional origin country where traveler departed from
 - **To Country**: Required destination country (stored in `country_code`)
 - **Entry/Exit Cities**: Optional airport codes (e.g., ICN, BKK, NRT)
-- **Visa Type**: Visa-free, e-visa, visa-on-arrival, tourist-visa, business-visa, transit
+- **Visa Type**: visa-free, e-visa, visa-on-arrival, tourist-visa, business-visa, transit, long-term-resident
 - **Ongoing Stays**: Exit date is nullable for current stays
+- **Notes**: General purpose text field (replaces legacy 'purpose' field)
 
 ### Stay Duration Calculation
 - For rolling windows: Calculate overlap between stay dates and the rolling period
 - For simple resets: Count days from most recent entry
 - Always include both entry and exit dates in calculations (+1 day)
 - Ongoing stays: Calculate days from entry to today
+- User-specific rules: Custom calculations for zbrianjin@gmail.com Korea stays
 
 ### Visual Indicators
 - Green progress bar: < 60% of visa limit used
 - Yellow progress bar: 60-80% of visa limit used
 - Red progress bar: > 80% of visa limit used
 - Warning text when < 30 days remaining
+- Dynamic visa info display showing correct limits (183 days for Korea long-term stays)
 
 ### Conditional UI Components
 - Country filters only show when there are recorded stays
 - Stay indicators hidden when no travel records exist
 - Form validation for From/To structure and date consistency
+- Visa type selection adapts to user email and country selection
+- Rolling calendar displays correct visa limits based on user context
+
+### TypeScript Implementation
+- **Enhanced Type Safety**: Added 'long-term-resident' to visa type union
+- **Proper Optional Handling**: Comprehensive handling of optional fields (exitDate, notes, etc.)
+- **User Context**: Type-safe user email context for custom visa rules
+- **Migration**: Seamless migration from legacy 'purpose' field to 'notes' field
+- **Build Validation**: Full TypeScript compilation success with strict type checking
+
+### Recent Improvements (Latest Session)
+- **Supabase Integration**: Production-ready dual-layer persistence system
+- **Data Recovery**: Robust handling of corrupted localStorage data
+- **User-Specific Rules**: Dynamic visa calculations based on user email
+- **TypeScript Migration**: Complete type safety overhaul with zero compilation errors
+- **Performance Optimization**: Efficient data loading with intelligent caching strategy
 
 ## AI Workflow Integration
 
@@ -143,3 +187,4 @@ This project follows the AI Workflow Playbook methodology:
 - Uses Field Proven Workflow for systematic development
 - Implements SaaS Dashboard Template patterns
 - Follows Context Engineering principles for clear communication
+- Maintains comprehensive documentation through automated updates

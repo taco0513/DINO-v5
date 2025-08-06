@@ -5,6 +5,123 @@ All notable changes to DINO-v5 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0] - 2025-01-06
+
+### 🚀 Major Enhancements: Data Persistence & User-Specific Rules
+
+This release introduces a production-ready dual-layer persistence system, user-specific visa rules, and comprehensive TypeScript improvements.
+
+#### 💾 Dual-Layer Persistence System
+- **Supabase-First Architecture**: Primary cloud storage with intelligent localStorage fallback
+- **Data Recovery**: Automatic detection and cleanup of corrupted localStorage data
+- **Offline Capability**: Seamless operation when Supabase is unavailable
+- **Auto-Sync**: Bidirectional synchronization between cloud and local storage layers
+- **Error Resilience**: Graceful degradation with comprehensive error recovery
+
+#### 👤 User-Specific Visa Rules
+- **Custom Korea Rule**: 183-day visa within 365-day rolling window for zbrianjin@gmail.com
+- **Long-term Resident Visa**: New visa type with extended stay allowance
+- **Dynamic Calculations**: Context-aware visa limit displays across all components
+- **Rolling Calendar Integration**: Accurate visa window visualization for custom rules
+- **User Context System**: Type-safe user email context for personalized experiences
+
+#### 🔧 TypeScript Migration & Type Safety
+- **Enhanced Type Definitions**: Added 'long-term-resident' to visa type union
+- **Optional Field Handling**: Comprehensive null/undefined safety for exitDate, notes
+- **Legacy Migration**: Seamless migration from 'purpose' to 'notes' field
+- **Build Validation**: Zero TypeScript compilation errors with strict checking
+- **Type-Safe User Context**: Strongly typed user email context system
+
+### ✨ Added
+
+#### Data Persistence Improvements
+- **StayManager Enhancements**: Supabase-first CRUD operations with localStorage backup
+- **Intelligent Loading**: Load from Supabase first, fallback to localStorage if needed
+- **Data Validation**: Comprehensive date validation with automatic cleanup
+- **Recovery Tools**: Built-in utilities for data restoration and migration
+
+#### User Experience
+- **Dynamic Visa Info**: Real-time visa limit display based on user context
+- **Visual Indicators**: Color-coded progress bars with correct percentage calculations
+- **Filter Integration**: Smart country filtering with context-aware visa information
+- **Error Messages**: User-friendly feedback for data operations and recovery
+
+### 🔄 Changed
+
+#### Data Model
+- **Stay Interface**: Added 'long-term-resident' to visa type union
+- **Notes Field**: Migrated all 'purpose' references to unified 'notes' field
+- **Optional Fields**: Enhanced handling of nullable exitDate and related fields
+- **User Context**: Integrated user email context for personalized visa rules
+
+#### Component Architecture
+- **CalendarCountryFilter**: Shows accurate visa limits (183 days for Korea long-term)
+- **RollingCalendar**: Displays correct visa calculations for user-specific rules
+- **StayManager**: Enhanced with Supabase-first operations and error handling
+- **VisaWarnings**: Updated with proper React component structure
+
+### 🐛 Fixed
+
+#### TypeScript Compilation
+- **ToggleButton Null Value**: Fixed CalendarCountryFilter toggle button value assignment
+- **Optional ExitDate**: Comprehensive handling in CalendarFullView and CalendarView
+- **Supabase Server Client**: Updated cookie handling for Next.js 15 compatibility
+- **Purpose Field Migration**: Complete migration to notes field across all components
+- **AirportSelector Types**: Fixed union type compatibility with string and Airport types
+
+#### Data Handling
+- **Invalid Date Display**: Fixed "NaN days" calculations in stay duration display
+- **Duplicate Properties**: Removed duplicate property assignments in form objects
+- **Missing Visa Types**: Added comprehensive visa type definitions to Stay interface
+- **Optional Validation**: Enhanced validation for optional fields in edit forms
+
+#### UI Components
+- **HTML Validation**: Fixed nested div in p tag errors (VisaWarnings component)
+- **Rolling Calendar**: Shows correct 183-day limits for Korea long-term stays
+- **Visa Window Filter**: Displays accurate visa information based on user context
+- **Function Signatures**: Fixed parameter mismatches in utility functions
+
+### 🗑️ Cleanup & Removal
+
+#### Debug Components
+- **Removed ClearSampleData**: Temporary debug component removed from dashboard
+- **Cleaned Imports**: Removed unused imports and debug utilities
+- **Optimized Helpers**: Browser console functions with proper type safety
+
+#### Legacy Code
+- **Purpose Field**: Complete migration to notes field across all components
+- **Function Signatures**: Updated to match current TypeScript standards
+- **Supabase Client**: Modernized initialization for Next.js 15 compatibility
+
+### 📝 Documentation
+
+#### CLAUDE.md Updates
+- **Data Persistence**: Comprehensive documentation of dual-layer architecture
+- **User-Specific Rules**: Detailed explanation of custom visa rule implementation
+- **TypeScript Guide**: Enhanced type safety and migration documentation
+- **Recent Improvements**: Summary of latest session achievements
+
+#### Change Tracking
+- **Session Summary**: Detailed record of all improvements and fixes
+- **Architecture Notes**: Updated system architecture documentation
+- **Developer Guide**: Enhanced guidance for future development
+
+### 🔒 Security & Reliability
+
+#### Error Boundaries
+- **Data Validation**: Comprehensive input validation and sanitization
+- **Fallback Mechanisms**: Graceful handling of storage layer failures
+- **User Context Security**: Secure user email context with type safety
+- **Recovery Strategies**: Multiple fallback options for data persistence
+
+#### Performance Optimization
+- **Intelligent Caching**: Efficient data loading with localStorage backup
+- **Memory Management**: Proper cleanup and garbage collection
+- **Build Optimization**: Reduced bundle size with optimized imports
+- **Type Safety**: Compile-time error prevention with strict TypeScript
+
+---
+
 ## [5.0.0] - 2025-08-06
 
 ### 🎉 Major Release: From/To Travel Structure

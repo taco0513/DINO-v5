@@ -261,17 +261,27 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
                         </Stack>
                       }
                       secondary={
-                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 0.5 }}>
+                        <span style={{ 
+                          display: 'flex', 
+                          flexDirection: 'row', 
+                          alignItems: 'center', 
+                          gap: '16px', 
+                          marginTop: '4px' 
+                        }}>
                           <LinearProgress 
                             variant="determinate" 
                             value={getProgressValue(visaStatus)}
                             color="success"
                             sx={{ flex: 1, height: 4, borderRadius: 1 }}
                           />
-                          <Typography variant="caption" color="text.secondary">
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#6b7280',
+                            fontFamily: 'Roboto, sans-serif'
+                          }}>
                             {visaStatus.daysUsed}/{visaStatus.totalAllowedDays}
-                          </Typography>
-                        </Stack>
+                          </span>
+                        </span>
                       }
                     />
                   </ListItem>

@@ -76,6 +76,41 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
         }
       }
       
+      // Clean up corrupted data
+      data = data.filter(stay => {
+        // Remove stays with invalid dates
+        if (!stay.entryDate || stay.entryDate === '' || stay.entryDate === 'undefined') {
+          console.warn('Removing stay with invalid entry date:', stay)
+          return false
+        }
+        
+        const entryDate = new Date(stay.entryDate)
+        if (isNaN(entryDate.getTime())) {
+          console.warn('Removing stay with corrupted entry date:', stay)
+          return false
+        }
+        
+        // Check exit date if provided
+        if (stay.exitDate && stay.exitDate !== '' && stay.exitDate !== 'undefined') {
+          const exitDate = new Date(stay.exitDate)
+          if (isNaN(exitDate.getTime())) {
+            console.warn('Removing stay with corrupted exit date:', stay)
+            return false
+          }
+        }
+        
+        return true
+      })
+      
+      // Save cleaned data back to storage
+      if (data.length > 0) {
+        localStorage.setItem('dino-stays-data', JSON.stringify({
+          version: '1.0',
+          stays: data,
+          lastUpdated: new Date().toISOString()
+        }))
+      }
+      
       // Check for date conflicts
       const conflicts = detectDateConflicts(data)
       const conflictMsg = generateConflictSummary(conflicts)
@@ -147,7 +182,30 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
   }
 
   const calculateDays = (stay: Stay) => {
-    return calculateStayDuration(stay)
+    try {
+      // Validate dates first
+      if (!stay.entryDate || stay.entryDate === '' || stay.entryDate === 'undefined') {
+        return 0
+      }
+      
+      const entryDate = new Date(stay.entryDate)
+      if (isNaN(entryDate.getTime())) {
+        return 0
+      }
+      
+      // Check exit date if provided
+      if (stay.exitDate && stay.exitDate !== '' && stay.exitDate !== 'undefined') {
+        const exitDate = new Date(stay.exitDate)
+        if (isNaN(exitDate.getTime())) {
+          return 0
+        }
+      }
+      
+      return calculateStayDuration(stay)
+    } catch (error) {
+      console.error('Error calculating stay duration:', error, stay)
+      return 0
+    }
   }
   
   const formatStayPeriod = (stay: Stay) => {
@@ -158,7 +216,15 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
   }
 
   const formatDate = (dateString: string) => {
+    if (!dateString || dateString === '' || dateString === 'undefined') {
+      return 'Invalid Date'
+    }
+    
     const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date'
+    }
+    
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric', 
@@ -347,43 +413,74 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
                           sx={{ fontSize: '0.6875rem' }}
                         />
                       )}
-                      {/* From → To Travel Route Display */}
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        {stay.fromCountry && (
-                          <>
-                            <Stack direction="row" spacing={0.5} alignItems="center">
-                              <Typography variant="h6" component="span">
-                                {countries.find(c => c.code === stay.fromCountry)?.flag || '🌍'}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                                {countries.find(c => c.code === stay.fromCountry)?.name || stay.fromCountry}
-                              </Typography>
-                              {stay.exitCity && (
-                                <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6875rem', ml: 0.5 }}>
-                                  {stay.exitCity}
-                                </Typography>
-                              )}
-                            </Stack>
-                            <Typography variant="body2" color="text.disabled" sx={{ mx: 1 }}>
-                              →
-                            </Typography>
-                          </>
-                        )}
-                        <Stack direction="row" spacing={0.5} alignItems="center">
-                          <Typography variant="h6" component="span">
-                            {country?.flag}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {country?.name}
-                          </Typography>
-                          {stay.entryCity && (
-                            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6875rem', ml: 0.5 }}>
-                              {stay.entryCity}
-                            </Typography>
-                          )}
-                        </Stack>
-                      </Stack>
                     </Stack>
+                  }
+                  secondary={
+                    <>
+                      {/* Travel Route: From → To */}
+                      {stay.fromCountry ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                          {/* From Country */}
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            <span style={{ fontSize: '16px' }}>
+                              {countries.find(c => c.code === stay.fromCountry)?.flag || '🌍'}
+                            </span>
+                            <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                              {countries.find(c => c.code === stay.fromCountry)?.name || stay.fromCountry}
+                            </span>
+                            {stay.exitCity && (
+                              <span style={{ color: '#9ca3af', fontSize: '11px' }}>
+                                {stay.exitCity}
+                              </span>
+                            )}
+                          </span>
+                          
+                          {/* Arrow */}
+                          <span style={{ color: '#9ca3af', fontWeight: 'bold', margin: '0 4px' }}>
+                            →
+                          </span>
+                          
+                          {/* To Country */}
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            <span style={{ fontSize: '16px' }}>
+                              {country?.flag}
+                            </span>
+                            <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                              {country?.name}
+                            </span>
+                            {stay.entryCity && (
+                              <span style={{ color: '#9ca3af', fontSize: '11px' }}>
+                                {stay.entryCity}
+                              </span>
+                            )}
+                          </span>
+                        </span>
+                      ) : (
+                        /* Only To Country if no From info */
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '2px', marginTop: '4px' }}>
+                          <span style={{ fontSize: '16px' }}>
+                            {country?.flag}
+                          </span>
+                          <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                            {country?.name}
+                          </span>
+                          {stay.entryCity && (
+                            <span style={{ color: '#9ca3af', fontSize: '11px' }}>
+                              {stay.entryCity}
+                            </span>
+                          )}
+                        </span>
+                      )}
+                      
+                      {/* Additional Info */}
+                      {resolvedStay.resolutionReason && (
+                        <div style={{ marginTop: '4px' }}>
+                          <span style={{ color: '#16a34a', fontStyle: 'italic', fontSize: '11px' }}>
+                            {resolvedStay.resolutionReason}
+                          </span>
+                        </div>
+                      )}
+                    </>
                   }
                 />
               </ListItem>

@@ -34,14 +34,14 @@ export default function CalendarView({ country, visaRule }: CalendarViewProps) {
           countryCode: country.code,
           entryDate: '2024-10-15',
           exitDate: '2024-11-10',
-          purpose: 'tourism'
+          notes: 'tourism'
         },
         {
           id: '2',
           countryCode: country.code,
           entryDate: '2024-12-20',
           exitDate: '2025-01-15',
-          purpose: 'tourism'
+          notes: 'tourism'
         }
       ])
     } finally {
@@ -71,7 +71,7 @@ export default function CalendarView({ country, visaRule }: CalendarViewProps) {
       
       stays.filter(s => s.countryCode === country.code).forEach(stay => {
         const entry = new Date(stay.entryDate)
-        const exit = new Date(stay.exitDate)
+        const exit = stay.exitDate ? new Date(stay.exitDate) : new Date() // Use today for ongoing stays
         
         // 윈도우 내의 체류만 계산
         if (exit >= windowStart && entry <= today) {
@@ -88,7 +88,7 @@ export default function CalendarView({ country, visaRule }: CalendarViewProps) {
       const lastStay = countryStays[countryStays.length - 1]
       if (lastStay) {
         const entry = new Date(lastStay.entryDate)
-        const exit = new Date(lastStay.exitDate)
+        const exit = lastStay.exitDate ? new Date(lastStay.exitDate) : new Date() // Use today for ongoing stays
         const effectiveExit = exit < today ? exit : today
         totalDays = Math.ceil((effectiveExit.getTime() - entry.getTime()) / (1000 * 60 * 60 * 24)) + 1
       }
@@ -152,14 +152,14 @@ export default function CalendarView({ country, visaRule }: CalendarViewProps) {
             <div key={stay.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div>
                 <p className="font-medium text-gray-900">
-                  {new Date(stay.entryDate).toLocaleDateString()} - {new Date(stay.exitDate).toLocaleDateString()}
+                  {new Date(stay.entryDate).toLocaleDateString()} - {stay.exitDate ? new Date(stay.exitDate).toLocaleDateString() : 'Present'}
                 </p>
                 <p className="text-sm text-gray-500">
-                  {Math.ceil((new Date(stay.exitDate).getTime() - new Date(stay.entryDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} days
+                  {stay.exitDate ? Math.ceil((new Date(stay.exitDate).getTime() - new Date(stay.entryDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : Math.ceil((new Date().getTime() - new Date(stay.entryDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} days
                 </p>
               </div>
               <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded">
-                {stay.purpose || 'tourism'}
+                {stay.notes || 'tourism'}
               </span>
             </div>
           ))}

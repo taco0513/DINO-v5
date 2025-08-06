@@ -156,9 +156,7 @@ export function validateStay(stay: Partial<Stay>): { isValid: boolean; errors: s
     }
   }
   
-  if (stay.purpose && !['tourism', 'business', 'transit'].includes(stay.purpose)) {
-    errors.push('Invalid purpose')
-  }
+  // Notes validation removed - can be any string
   
   return {
     isValid: errors.length === 0,

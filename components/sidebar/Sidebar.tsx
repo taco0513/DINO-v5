@@ -31,11 +31,12 @@ import {
   Menu as MenuIcon,
   Add as AddIcon
 } from '@mui/icons-material'
-import { Country } from '@/lib/types'
+import { Country, Stay } from '@/lib/types'
 import { addStayToStorage } from '@/lib/storage/stays-storage'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
+import { getCurrentUserEmail } from '@/lib/context/user'
 
 interface SidebarProps {
   countries: Country[]
@@ -55,6 +56,7 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
   const [modalOpen, setModalOpen] = useState(false)
   const router = useRouter()
   const [nationality] = useState('US') // TODO: Get from settings/context
+  const [userEmail] = useState(getCurrentUserEmail())
   const [formData, setFormData] = useState({
     countryCode: '', // No default country selection
     fromCountry: '',
@@ -69,7 +71,7 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
   const theme = useTheme()
   
   // Get available visa types for selected country
-  const availableVisaTypes = formData.countryCode ? getAvailableVisaTypes(formData.countryCode, nationality) : []
+  const availableVisaTypes = formData.countryCode ? getAvailableVisaTypes(formData.countryCode, nationality, userEmail) : []
   
   useEffect(() => {
     const supabase = createClient()
@@ -143,7 +145,7 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
       exitDate: formData.exitDate || undefined,
       entryCity: formData.entryCity || undefined,
       exitCity: formData.exitCity || undefined,
-      visaType: formData.visaType,
+      visaType: formData.visaType as Stay['visaType'],
       notes: formData.notes
     })
     
@@ -416,7 +418,7 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
                     value={formData.countryCode}
                     onChange={(e) => {
                       const newCountry = e.target.value
-                      const visaTypes = getAvailableVisaTypes(newCountry, nationality)
+                      const visaTypes = getAvailableVisaTypes(newCountry, nationality, userEmail)
                       setFormData({ 
                         ...formData, 
                         countryCode: newCountry,

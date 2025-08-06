@@ -14,6 +14,8 @@ import {
   Flag as FlagIcon
 } from '@mui/icons-material'
 import { Country, Stay } from '@/lib/types'
+import { calculateAllVisaStatuses, calculateVisaStatus, type VisaCalculationContext } from '@/lib/visa-calculations/visa-engine'
+import { getCurrentUserEmail } from '@/lib/context/user'
 
 interface CalendarCountryFilterProps {
   countries: Country[]
@@ -22,12 +24,40 @@ interface CalendarCountryFilterProps {
   onCountryChange: (country: string | null) => void
 }
 
-// Visa rules for display
-const visaInfo = {
-  'KR': '90 days per entry',
-  'JP': '90 days in 180-day window',
-  'TH': '30 days per entry (+30 ext)',
-  'VN': '45 days per entry'
+// Get dynamic visa info based on user's actual visa rules
+function getVisaInfo(countryCode: string, stays: Stay[]): string {
+  const userEmail = getCurrentUserEmail()
+  
+  // Special case for Korea with long-term resident visa
+  if (countryCode === 'KR' && userEmail === 'zbrianjin@gmail.com') {
+    const koreaStays = stays.filter(s => s.countryCode === 'KR')
+    const hasLongTermStay = koreaStays.some(s => s.visaType === 'long-term-resident')
+    
+    if (hasLongTermStay) {
+      return '183 days in 365-day window'
+    }
+  }
+  
+  // Calculate using visa engine
+  const context: VisaCalculationContext = {
+    nationality: 'US',
+    referenceDate: new Date(),
+    userEmail
+  }
+  
+  const visaStatus = calculateVisaStatus(countryCode, stays, context)
+  if (visaStatus.rule) {
+    const { maxDays, periodDays, resetType } = visaStatus.rule
+    
+    if (resetType === 'rolling') {
+      return `${maxDays} days in ${periodDays}-day window`
+    } else {
+      return `${maxDays} days per entry`
+    }
+  }
+  
+  // Fallback for unknown countries
+  return 'Check requirements'
 }
 
 export default function CalendarCountryFilter({ 
@@ -63,7 +93,7 @@ export default function CalendarCountryFilter({
           </Typography>
           {selectedCountry && (
             <Chip
-              label={visaInfo[selectedCountry as keyof typeof visaInfo]}
+              label={getVisaInfo(selectedCountry, stays)}
               size="small"
               variant="outlined"
               sx={{ fontSize: '11px' }}
@@ -94,7 +124,7 @@ export default function CalendarCountryFilter({
             }
           }}
         >
-          <ToggleButton value={null} aria-label="all countries">
+          <ToggleButton value="" aria-label="all countries">
             <Stack direction="row" spacing={1} alignItems="center">
               <PublicIcon sx={{ fontSize: 18 }} />
               <Typography variant="body2">All Countries</Typography>

@@ -14,8 +14,7 @@ export default function AddStayModal({ isOpen, onClose, onAdd, countryCode }: Ad
   const [formData, setFormData] = useState({
     entryDate: '',
     exitDate: '',
-    purpose: 'tourism' as Stay['purpose'],
-    notes: ''
+    notes: 'tourism'
   })
 
   if (!isOpen) return null
@@ -38,7 +37,6 @@ export default function AddStayModal({ isOpen, onClose, onAdd, countryCode }: Ad
       countryCode,
       entryDate: formData.entryDate,
       exitDate: formData.exitDate,
-      purpose: formData.purpose,
       notes: formData.notes
     })
     
@@ -46,7 +44,6 @@ export default function AddStayModal({ isOpen, onClose, onAdd, countryCode }: Ad
     setFormData({
       entryDate: '',
       exitDate: '',
-      purpose: 'tourism',
       notes: ''
     })
     
@@ -90,8 +87,8 @@ export default function AddStayModal({ isOpen, onClose, onAdd, countryCode }: Ad
               Purpose
             </label>
             <select
-              value={formData.purpose}
-              onChange={(e) => setFormData({ ...formData, purpose: e.target.value as Stay['purpose'] })}
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="tourism">Tourism</option>

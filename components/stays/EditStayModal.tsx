@@ -17,6 +17,7 @@ import { Stay, Country } from '@/lib/types'
 import { updateStayInStorage } from '@/lib/storage/stays-storage'
 import { updateStay } from '@/lib/supabase/stays'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
+import { getCurrentUserEmail } from '@/lib/context/user'
 
 interface EditStayModalProps {
   open: boolean
@@ -28,6 +29,7 @@ interface EditStayModalProps {
 
 export default function EditStayModal({ open, stay, countries, onClose, onUpdated }: EditStayModalProps) {
   const [nationality] = useState('US')
+  const [userEmail] = useState(getCurrentUserEmail())
   const [formData, setFormData] = useState({
     countryCode: '',
     fromCountry: '',
@@ -43,7 +45,7 @@ export default function EditStayModal({ open, stay, countries, onClose, onUpdate
   // Initialize form data when stay prop changes
   useEffect(() => {
     if (stay) {
-      const visaTypes = getAvailableVisaTypes(stay.countryCode, nationality)
+      const visaTypes = getAvailableVisaTypes(stay.countryCode, nationality, userEmail)
       setFormData({
         countryCode: stay.countryCode,
         fromCountry: stay.fromCountry || '',
@@ -58,7 +60,7 @@ export default function EditStayModal({ open, stay, countries, onClose, onUpdate
   }, [stay, nationality])
 
   // Get available visa types for selected country
-  const availableVisaTypes = getAvailableVisaTypes(formData.countryCode, nationality)
+  const availableVisaTypes = getAvailableVisaTypes(formData.countryCode, nationality, userEmail)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,7 +90,7 @@ export default function EditStayModal({ open, stay, countries, onClose, onUpdate
         exitDate: formData.exitDate || undefined,
         entryCity: formData.entryCity || undefined,
         exitCity: formData.exitCity || undefined,
-        visaType: formData.visaType,
+        visaType: formData.visaType as Stay['visaType'],
         notes: formData.notes
       })
 
@@ -104,7 +106,7 @@ export default function EditStayModal({ open, stay, countries, onClose, onUpdate
         exitDate: formData.exitDate || undefined,
         entryCity: formData.entryCity || undefined,
         exitCity: formData.exitCity || undefined,
-        visaType: formData.visaType,
+        visaType: formData.visaType as Stay['visaType'],
         notes: formData.notes
       }).catch(supabaseError => {
         console.warn('Failed to sync update with Supabase (non-critical):', supabaseError)
@@ -129,7 +131,7 @@ export default function EditStayModal({ open, stay, countries, onClose, onUpdate
   }
 
   const handleCountryChange = (newCountry: string) => {
-    const visaTypes = getAvailableVisaTypes(newCountry, nationality)
+    const visaTypes = getAvailableVisaTypes(newCountry, nationality, userEmail)
     setFormData({ 
       ...formData, 
       countryCode: newCountry,

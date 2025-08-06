@@ -19,7 +19,7 @@ export interface Stay {
   exitDate?: string      // ISO date string - optional for ongoing stays
   entryCity?: string     // Arrival airport/city code (e.g., ICN, BKK)
   exitCity?: string      // Departure airport/city code
-  visaType?: 'visa-free' | 'e-visa' | 'visa-on-arrival' | 'tourist-visa' | 'business-visa' | 'transit'
+  visaType?: 'visa-free' | 'e-visa' | 'visa-on-arrival' | 'tourist-visa' | 'business-visa' | 'transit' | 'long-term-resident'
   notes?: string
 }
 

@@ -171,7 +171,17 @@ export const visaRulesByNationality: { [nationality: string]: NationalityVisaRul
 }
 
 // Get visa rules for a specific nationality and destination
-export function getVisaRules(nationality: string, destination: string): VisaRule | null {
+export function getVisaRules(nationality: string, destination: string, visaType?: string, userEmail?: string): VisaRule | null {
+  // Special rule for zbrianjin@gmail.com's long-term resident status in Korea
+  if (userEmail === 'zbrianjin@gmail.com' && destination === 'KR' && visaType === 'long-term-resident') {
+    return {
+      maxDays: 183,
+      periodDays: 365,
+      resetType: 'rolling',
+      description: '183 days within any 365-day rolling window'
+    }
+  }
+  
   const nationalityRules = visaRulesByNationality[nationality]
   if (!nationalityRules) return null
   

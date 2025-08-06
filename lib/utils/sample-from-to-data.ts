@@ -83,7 +83,7 @@ export function resetWithSampleFromToData() {
 
 // Browser console helpers
 if (typeof window !== 'undefined') {
-  (window as any).addSampleFromToData = addSampleFromToData
-  (window as any).resetWithSampleFromToData = resetWithSampleFromToData
+  (window as any).addSampleFromToData = () => addSampleFromToData()
+  (window as any).resetWithSampleFromToData = () => resetWithSampleFromToData()
   console.log('💡 Run window.addSampleFromToData() or window.resetWithSampleFromToData() to test From-To display!')
 }

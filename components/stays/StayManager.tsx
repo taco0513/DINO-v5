@@ -25,6 +25,7 @@ import {
 } from '@/lib/storage/stays-storage'
 import { cardBoxStyle, cardHeaderStyle, cardTitleStyle, cardSubtitleStyle } from '@/lib/styles/common'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
+import { getCurrentUserEmail } from '@/lib/context/user'
 
 interface StayManagerProps {
   countries: Country[]
@@ -38,6 +39,7 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
   const [isAddMode, setIsAddMode] = useState(true) // Always show form
   const [editingStay, setEditingStay] = useState<Stay | null>(null)
   const [nationality] = useState('US') // TODO: Get from settings/context
+  const [userEmail] = useState(getCurrentUserEmail())
   const [formData, setFormData] = useState({
     countryCode: selectedCountries[0] || '', // No default country selection
     fromCountry: '',
@@ -50,7 +52,7 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
   })
   
   // Get available visa types for selected country
-  const availableVisaTypes = formData.countryCode ? getAvailableVisaTypes(formData.countryCode, nationality) : []
+  const availableVisaTypes = formData.countryCode ? getAvailableVisaTypes(formData.countryCode, nationality, userEmail) : []
   
   // Set default visa type when country changes
   useEffect(() => {
@@ -66,20 +68,21 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
   const loadStays = async () => {
     setLoading(true)
     try {
-      // Try to load from localStorage first
-      let data = loadStaysFromStorage()
+      let data: Stay[] = []
       
-      // If no local data, try Supabase
-      if (data.length === 0) {
-        try {
-          data = await getStays()
-          // Save to localStorage for future use
-          if (data.length > 0) {
-            saveStaysToStorage(data)
-          }
-        } catch (supabaseError) {
-          console.warn('Supabase not available, using localStorage only:', supabaseError)
+      // Try Supabase first for most up-to-date data
+      try {
+        data = await getStays()
+        if (data.length > 0) {
+          // Save to localStorage as backup
+          saveStaysToStorage(data)
+        } else {
+          // If Supabase is empty, use localStorage backup
+          data = loadStaysFromStorage()
         }
+      } catch (supabaseError) {
+        console.warn('Supabase not available, using localStorage:', supabaseError)
+        data = loadStaysFromStorage()
       }
       
       // Sort by entry date (newest first)
@@ -97,7 +100,7 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
 
   const resetForm = () => {
     const defaultCountry = selectedCountries[0] || '' // No default country
-    const defaultVisaTypes = defaultCountry ? getAvailableVisaTypes(defaultCountry, nationality) : []
+    const defaultVisaTypes = defaultCountry ? getAvailableVisaTypes(defaultCountry, nationality, userEmail) : []
     setFormData({
       countryCode: defaultCountry,
       fromCountry: '',
@@ -115,12 +118,12 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
 
   const handleEdit = (stay: Stay) => {
     setEditingStay(stay)
-    const visaTypes = getAvailableVisaTypes(stay.countryCode, nationality)
+    const visaTypes = getAvailableVisaTypes(stay.countryCode, nationality, userEmail)
     setFormData({
       countryCode: stay.countryCode,
       fromCountry: stay.fromCountry || '',
       entryDate: stay.entryDate,
-      exitDate: stay.exitDate,
+      exitDate: stay.exitDate || '',
       entryCity: stay.entryCity || '',
       exitCity: stay.exitCity || '',
       visaType: stay.visaType || (visaTypes.length > 0 ? visaTypes[0].value : ''),
@@ -146,72 +149,88 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
 
     try {
       if (editingStay) {
-        // Update existing stay
-        let updated: Stay
-        
-        // Try updating in localStorage first
-        const localUpdated = updateStayInStorage(editingStay.id, {
-          countryCode: formData.countryCode,
-          fromCountry: formData.fromCountry || undefined,
-          entryDate: formData.entryDate,
-          exitDate: formData.exitDate || undefined,
-          entryCity: formData.entryCity || undefined,
-          exitCity: formData.exitCity || undefined,
-          visaType: formData.visaType,
-          notes: formData.notes
-        })
-        
-        if (localUpdated) {
-          updated = localUpdated
-          
-          // Try to sync with Supabase in background (non-blocking)
-          updateStay(editingStay.id, {
+        // Update existing stay - try Supabase first
+        try {
+          const updated = await updateStay(editingStay.id, {
             countryCode: formData.countryCode,
             fromCountry: formData.fromCountry || undefined,
             entryDate: formData.entryDate,
             exitDate: formData.exitDate || undefined,
             entryCity: formData.entryCity || undefined,
             exitCity: formData.exitCity || undefined,
-            visaType: formData.visaType,
+            visaType: formData.visaType as Stay['visaType'],
             notes: formData.notes
-          }).catch(supabaseError => {
-            console.warn('Failed to sync update with Supabase (non-critical):', supabaseError)
           })
-        } else {
-          throw new Error('Failed to update stay in localStorage')
+          
+          // Update localStorage as backup
+          updateStayInStorage(editingStay.id, {
+            countryCode: formData.countryCode,
+            fromCountry: formData.fromCountry || undefined,
+            entryDate: formData.entryDate,
+            exitDate: formData.exitDate || undefined,
+            entryCity: formData.entryCity || undefined,
+            exitCity: formData.exitCity || undefined,
+            visaType: formData.visaType as Stay['visaType'],
+            notes: formData.notes
+          })
+          
+          setStays(prev => prev.map(stay => 
+            stay.id === editingStay.id ? updated : stay
+          ))
+        } catch (supabaseError) {
+          console.warn('Supabase update failed, trying localStorage only:', supabaseError)
+          const localUpdated = updateStayInStorage(editingStay.id, {
+            countryCode: formData.countryCode,
+            fromCountry: formData.fromCountry || undefined,
+            entryDate: formData.entryDate,
+            exitDate: formData.exitDate || undefined,
+            entryCity: formData.entryCity || undefined,
+            exitCity: formData.exitCity || undefined,
+            visaType: formData.visaType as Stay['visaType'],
+            notes: formData.notes
+          })
+          
+          if (!localUpdated) {
+            throw new Error('Failed to update stay')
+          }
+          
+          setStays(prev => prev.map(stay => 
+            stay.id === editingStay.id ? localUpdated : stay
+          ))
         }
         
-        setStays(prev => prev.map(stay => 
-          stay.id === editingStay.id ? updated : stay
-        ))
       } else {
-        // Add new stay
-        const newStay = addStayToStorage({
-          countryCode: formData.countryCode,
-          fromCountry: formData.fromCountry || undefined,
-          entryDate: formData.entryDate,
-          exitDate: formData.exitDate || undefined,
-          entryCity: formData.entryCity || undefined,
-          exitCity: formData.exitCity || undefined,
-          visaType: formData.visaType,
-          notes: formData.notes
-        })
-        
-        // Try to sync with Supabase in background (non-blocking)
-        addStay({
-          countryCode: formData.countryCode,
-          fromCountry: formData.fromCountry || undefined,
-          entryDate: formData.entryDate,
-          exitDate: formData.exitDate || undefined,
-          entryCity: formData.entryCity || undefined,
-          exitCity: formData.exitCity || undefined,
-          visaType: formData.visaType,
-          notes: formData.notes
-        }).catch(supabaseError => {
-          console.warn('Failed to sync addition with Supabase (non-critical):', supabaseError)
-        })
-        
-        setStays(prev => [newStay, ...prev])
+        // Add new stay - try Supabase first
+        try {
+          const newStay = await addStay({
+            countryCode: formData.countryCode,
+            fromCountry: formData.fromCountry || undefined,
+            entryDate: formData.entryDate,
+            exitDate: formData.exitDate || undefined,
+            entryCity: formData.entryCity || undefined,
+            exitCity: formData.exitCity || undefined,
+            visaType: formData.visaType as Stay['visaType'],
+            notes: formData.notes
+          })
+          
+          // Save to localStorage as backup
+          addStayToStorage(newStay)
+          setStays(prev => [newStay, ...prev])
+        } catch (supabaseError) {
+          console.warn('Supabase add failed, trying localStorage only:', supabaseError)
+          const newStay = addStayToStorage({
+            countryCode: formData.countryCode,
+            fromCountry: formData.fromCountry || undefined,
+            entryDate: formData.entryDate,
+            exitDate: formData.exitDate || undefined,
+            entryCity: formData.entryCity || undefined,
+            exitCity: formData.exitCity || undefined,
+            visaType: formData.visaType as Stay['visaType'],
+            notes: formData.notes
+          })
+          
+          setStays(prev => [newStay, ...prev])
+        }
       }
       
       resetForm()
@@ -230,21 +249,27 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
     }
 
     try {
-      // Delete from localStorage first
-      const success = deleteStayFromStorage(stayId)
-      
-      if (success) {
+      // Try Supabase first
+      try {
+        await deleteStay(stayId)
+        
+        // Also delete from localStorage backup
+        deleteStayFromStorage(stayId)
+        
         setStays(prev => prev.filter(stay => stay.id !== stayId))
-        
-        // Try to sync with Supabase in background (non-blocking)
-        deleteStay(stayId).catch(supabaseError => {
-          console.warn('Failed to sync deletion with Supabase (non-critical):', supabaseError)
-        })
-        
         onStaysChange() // Refresh calendar
         alert('Stay deleted successfully!')
-      } else {
-        throw new Error('Failed to delete stay from localStorage')
+      } catch (supabaseError) {
+        console.warn('Supabase delete failed, trying localStorage only:', supabaseError)
+        const success = deleteStayFromStorage(stayId)
+        
+        if (success) {
+          setStays(prev => prev.filter(stay => stay.id !== stayId))
+          onStaysChange() // Refresh calendar
+          alert('Stay deleted successfully!')
+        } else {
+          throw new Error('Failed to delete stay from localStorage')
+        }
       }
     } catch (error) {
       console.error('Failed to delete stay:', error)
@@ -346,7 +371,7 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
                 value={formData.countryCode}
                 onChange={(e) => {
                   const newCountry = e.target.value
-                  const visaTypes = getAvailableVisaTypes(newCountry, nationality)
+                  const visaTypes = getAvailableVisaTypes(newCountry, nationality, userEmail)
                   setFormData({ 
                     ...formData, 
                     countryCode: newCountry,
