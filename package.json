@@ -1,0 +1,36 @@
+{
+  "name": "dino-v5",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.1",
+    "@mui/material": "^7.3.1",
+    "@mui/system": "^7.3.1",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.53.0",
+    "@types/node": "^24.2.0",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "autoprefixer": "^10.4.21",
+    "date-fns": "^4.1.0",
+    "eslint": "^9.32.0",
+    "eslint-config-next": "^15.4.5",
+    "next": "^15.4.5",
+    "postcss": "^8.5.6",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "typescript": "^5.9.2"
+  }
+}
