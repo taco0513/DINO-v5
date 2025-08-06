@@ -25,6 +25,7 @@ import UserMenu from '@/components/auth/UserMenu'
 import { Country, Stay } from '@/lib/types'
 import { getStays } from '@/lib/supabase/stays'
 import { loadStaysFromStorage, saveStaysToStorage } from '@/lib/storage/stays-storage'
+import { detectDateConflicts, autoResolveConflicts } from '@/lib/utils/date-conflict-resolver'
 
 const countries: Country[] = [
   { code: 'KR', name: '한국', flag: '🇰🇷' },
@@ -60,6 +61,16 @@ export default function Home() {
         } catch (supabaseError) {
           console.warn('Supabase not available, using localStorage only:', supabaseError)
         }
+      }
+      
+      // Auto-resolve any date conflicts
+      const conflicts = detectDateConflicts(data)
+      if (conflicts.some(c => c.severity === 'critical')) {
+        console.log('🔧 Auto-resolving', conflicts.length, 'date conflicts...')
+        const resolvedStays = autoResolveConflicts(data)
+        // Update localStorage with resolved data
+        saveStaysToStorage(resolvedStays)
+        data = resolvedStays
       }
       
       setStays(data)

@@ -17,7 +17,9 @@ import {
   Button,
   Collapse,
   Stack,
-  Skeleton
+  Skeleton,
+  Alert,
+  AlertTitle
 } from '@mui/material'
 import {
   Edit as EditIcon,
@@ -30,6 +32,12 @@ import { Country, Stay, isOngoingStay, calculateStayDuration } from '@/lib/types
 import { getStays, updateStay, deleteStay } from '@/lib/supabase/stays'
 import { loadStaysFromStorage, deleteStayFromStorage } from '@/lib/storage/stays-storage'
 import { cardBoxStyle, cardHeaderStyle, cardTitleStyle, googleColors } from '@/lib/styles/common'
+import { 
+  detectDateConflicts, 
+  autoResolveConflicts, 
+  generateConflictSummary,
+  type ResolvedStay 
+} from '@/lib/utils/date-conflict-resolver'
 
 interface StaysListProps {
   countries: Country[]
@@ -41,6 +49,8 @@ export default function StaysList({ countries, onStaysChange }: StaysListProps) 
   const [loading, setLoading] = useState(true)
   const [selectedCountry, setSelectedCountry] = useState<string>('ALL')
   const [showAll, setShowAll] = useState(false)
+  const [conflictSummary, setConflictSummary] = useState<string>('')
+  const [autoResolved, setAutoResolved] = useState(false)
 
   useEffect(() => {
     loadStays()
@@ -61,8 +71,26 @@ export default function StaysList({ countries, onStaysChange }: StaysListProps) 
         }
       }
       
+      // Check for date conflicts
+      const conflicts = detectDateConflicts(data)
+      const conflictMsg = generateConflictSummary(conflicts)
+      setConflictSummary(conflictMsg)
+
+      // Auto-resolve critical conflicts if any exist
+      let finalStays = data
+      if (conflicts.some(c => c.severity === 'critical')) {
+        const resolvedStays = autoResolveConflicts(data)
+        finalStays = resolvedStays
+        setAutoResolved(true)
+        
+        // Update localStorage with resolved data
+        localStorage.setItem('dino-v5-stays', JSON.stringify(finalStays))
+        
+        console.log('🔧 Auto-resolved date conflicts:', conflicts.length, 'conflicts found')
+      }
+      
       // Sort by entry date (newest first)
-      const sortedStays = data.sort((a, b) => 
+      const sortedStays = finalStays.sort((a, b) => 
         new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()
       )
       setStays(sortedStays)
@@ -192,6 +220,32 @@ export default function StaysList({ countries, onStaysChange }: StaysListProps) 
         </Stack>
       </Box>
 
+      {/* Conflict Alert */}
+      {conflictSummary && !conflictSummary.includes('No date conflicts') && (
+        <Box sx={{ px: 3, pb: 2 }}>
+          <Alert 
+            severity={autoResolved ? "success" : "warning"}
+            variant="outlined"
+            sx={{ 
+              borderRadius: 2,
+              '& .MuiAlert-message': { width: '100%' }
+            }}
+          >
+            <AlertTitle sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
+              {autoResolved ? '✅ Date Conflicts Auto-Resolved' : '⚠️ Date Conflicts Detected'}
+            </AlertTitle>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              {conflictSummary}
+            </Typography>
+            {autoResolved && (
+              <Typography variant="caption" sx={{ display: 'block', mt: 1, fontStyle: 'italic' }}>
+                Multiple ongoing stays were automatically adjusted to create a logical travel sequence.
+              </Typography>
+            )}
+          </Alert>
+        </Box>
+      )}
+
       {/* Stays List */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', px: 3, pb: 3 }}>
         <List disablePadding sx={{ flex: 1 }}>
@@ -218,6 +272,8 @@ export default function StaysList({ countries, onStaysChange }: StaysListProps) 
             const country = countries.find(c => c.code === stay.countryCode)
             const days = calculateDays(stay)
             const isOngoing = isOngoingStay(stay)
+            const resolvedStay = stay as ResolvedStay
+            const wasAutoResolved = resolvedStay.autoResolved
             
             return (
               <ListItem
@@ -266,6 +322,15 @@ export default function StaysList({ countries, onStaysChange }: StaysListProps) 
                         size="small"
                         variant={isOngoing ? "filled" : "outlined"}
                       />
+                      {wasAutoResolved && (
+                        <Chip
+                          label="Auto-fixed"
+                          color="success"
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontSize: '0.6875rem' }}
+                        />
+                      )}
                       <Stack direction="row" spacing={1} alignItems="center">
                         <Typography variant="h6" component="span">
                           {country?.flag}
