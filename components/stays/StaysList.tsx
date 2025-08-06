@@ -38,19 +38,23 @@ import {
   generateConflictSummary,
   type ResolvedStay 
 } from '@/lib/utils/date-conflict-resolver'
+import EditStayModal from './EditStayModal'
 
 interface StaysListProps {
   countries: Country[]
   onStaysChange: () => void
+  onEditStay?: (stay: Stay) => void
 }
 
-export default function StaysList({ countries, onStaysChange }: StaysListProps) {
+export default function StaysList({ countries, onStaysChange, onEditStay }: StaysListProps) {
   const [stays, setStays] = useState<Stay[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCountry, setSelectedCountry] = useState<string>('ALL')
   const [showAll, setShowAll] = useState(false)
   const [conflictSummary, setConflictSummary] = useState<string>('')
   const [autoResolved, setAutoResolved] = useState(false)
+  const [editingStay, setEditingStay] = useState<Stay | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(() => {
     loadStays()
@@ -129,6 +133,16 @@ export default function StaysList({ countries, onStaysChange }: StaysListProps) 
       console.error('Failed to delete stay:', error)
       alert('Failed to delete stay. Please try again.')
     }
+  }
+
+  const handleEditClose = () => {
+    setShowEditModal(false)
+    setEditingStay(null)
+  }
+
+  const handleEditUpdated = () => {
+    loadStays() // Reload stays after update
+    onStaysChange() // Notify parent component
   }
 
   const calculateDays = (stay: Stay) => {
@@ -291,8 +305,8 @@ export default function StaysList({ countries, onStaysChange }: StaysListProps) 
                     <IconButton
                       edge="end"
                       onClick={() => {
-                        // TODO: Implement edit functionality
-                        alert('Edit functionality coming soon!')
+                        setEditingStay(stay)
+                        setShowEditModal(true)
                       }}
                       color="primary"
                       size="small"
@@ -362,6 +376,15 @@ export default function StaysList({ countries, onStaysChange }: StaysListProps) 
           </Button>
         </Box>
       )}
+
+      {/* Edit Modal */}
+      <EditStayModal
+        open={showEditModal}
+        stay={editingStay}
+        countries={countries}
+        onClose={handleEditClose}
+        onUpdated={handleEditUpdated}
+      />
     </Box>
   )
 }
