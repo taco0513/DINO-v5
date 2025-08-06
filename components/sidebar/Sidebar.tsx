@@ -56,7 +56,8 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
   const router = useRouter()
   const [nationality] = useState('US') // TODO: Get from settings/context
   const [formData, setFormData] = useState({
-    countryCode: 'KR',
+    countryCode: '', // No default country selection
+    fromCountry: '',
     entryDate: '',
     exitDate: '',
     entryCity: '',
@@ -68,7 +69,7 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
   const theme = useTheme()
   
   // Get available visa types for selected country
-  const availableVisaTypes = getAvailableVisaTypes(formData.countryCode, nationality)
+  const availableVisaTypes = formData.countryCode ? getAvailableVisaTypes(formData.countryCode, nationality) : []
   
   useEffect(() => {
     const supabase = createClient()
@@ -110,14 +111,14 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
 
   const handleModalClose = () => {
     setModalOpen(false)
-    const defaultVisaTypes = getAvailableVisaTypes('KR', nationality)
     setFormData({
-      countryCode: 'KR',
+      countryCode: '', // No default country selection
+      fromCountry: '',
       entryDate: '',
       exitDate: '',
       entryCity: '',
       exitCity: '',
-      visaType: defaultVisaTypes.length > 0 ? defaultVisaTypes[0].value : '',
+      visaType: '',
       notes: ''
     })
   }
@@ -427,6 +428,9 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
                     size="small"
                     helperText="Where did you travel to?"
                   >
+                    <MenuItem value="">
+                      <em>Select destination country</em>
+                    </MenuItem>
                     {countries.map(country => (
                       <MenuItem key={country.code} value={country.code}>
                         {country.flag} {country.name}

@@ -39,7 +39,7 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
   const [editingStay, setEditingStay] = useState<Stay | null>(null)
   const [nationality] = useState('US') // TODO: Get from settings/context
   const [formData, setFormData] = useState({
-    countryCode: selectedCountries[0] || 'KR',
+    countryCode: selectedCountries[0] || '', // No default country selection
     fromCountry: '',
     entryDate: '',
     exitDate: '',
@@ -50,7 +50,7 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
   })
   
   // Get available visa types for selected country
-  const availableVisaTypes = getAvailableVisaTypes(formData.countryCode, nationality)
+  const availableVisaTypes = formData.countryCode ? getAvailableVisaTypes(formData.countryCode, nationality) : []
   
   // Set default visa type when country changes
   useEffect(() => {
@@ -96,8 +96,8 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
   }
 
   const resetForm = () => {
-    const defaultCountry = selectedCountries[0] || 'KR'
-    const defaultVisaTypes = getAvailableVisaTypes(defaultCountry, nationality)
+    const defaultCountry = selectedCountries[0] || '' // No default country
+    const defaultVisaTypes = defaultCountry ? getAvailableVisaTypes(defaultCountry, nationality) : []
     setFormData({
       countryCode: defaultCountry,
       fromCountry: '',
@@ -357,6 +357,9 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
                 fullWidth
                 helperText="Where did you travel to?"
               >
+                <MenuItem value="">
+                  <em>Select destination country</em>
+                </MenuItem>
                 {countries.map(country => (
                   <MenuItem key={country.code} value={country.code}>
                     {country.flag} {country.name}
