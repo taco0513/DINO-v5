@@ -55,6 +55,7 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
   const [autoResolved, setAutoResolved] = useState(false)
   const [editingStay, setEditingStay] = useState<Stay | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [alertDismissed, setAlertDismissed] = useState(false)
 
   useEffect(() => {
     loadStays()
@@ -234,12 +235,13 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
         </Stack>
       </Box>
 
-      {/* Conflict Alert */}
-      {conflictSummary && !conflictSummary.includes('No date conflicts') && (
+      {/* Conflict Alert with Dismiss */}
+      {conflictSummary && !conflictSummary.includes('No date conflicts') && !alertDismissed && (
         <Box sx={{ px: 3, pb: 2 }}>
           <Alert 
             severity={autoResolved ? "success" : "warning"}
             variant="outlined"
+            onClose={() => setAlertDismissed(true)}
             sx={{ 
               borderRadius: 2,
               '& .MuiAlert-message': { width: '100%' }
@@ -345,13 +347,41 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
                           sx={{ fontSize: '0.6875rem' }}
                         />
                       )}
+                      {/* From → To Travel Route Display */}
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="h6" component="span">
-                          {country?.flag}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {country?.name}
-                        </Typography>
+                        {stay.fromCountry && (
+                          <>
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Typography variant="h6" component="span">
+                                {countries.find(c => c.code === stay.fromCountry)?.flag || '🌍'}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                {countries.find(c => c.code === stay.fromCountry)?.name || stay.fromCountry}
+                              </Typography>
+                              {stay.exitCity && (
+                                <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6875rem', ml: 0.5 }}>
+                                  {stay.exitCity}
+                                </Typography>
+                              )}
+                            </Stack>
+                            <Typography variant="body2" color="text.disabled" sx={{ mx: 1 }}>
+                              →
+                            </Typography>
+                          </>
+                        )}
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <Typography variant="h6" component="span">
+                            {country?.flag}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {country?.name}
+                          </Typography>
+                          {stay.entryCity && (
+                            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6875rem', ml: 0.5 }}>
+                              {stay.entryCity}
+                            </Typography>
+                          )}
+                        </Stack>
                       </Stack>
                     </Stack>
                   }
