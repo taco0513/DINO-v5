@@ -1,5 +1,6 @@
 import { createClient } from './client'
 import type { Stay } from '../types'
+import { logger } from '@/lib/utils/logger'
 
 export async function getStays(countryCode?: string) {
   const supabase = createClient()
@@ -16,7 +17,7 @@ export async function getStays(countryCode?: string) {
   const { data, error } = await query
   
   if (error) {
-    console.error('Error fetching stays:', error)
+    logger.error('Error fetching stays:', error)
     return []
   }
   
@@ -43,7 +44,7 @@ export async function addStay(stay: Omit<Stay, 'id'>) {
       .single()
     
     if (error) {
-      console.error('Supabase error adding stay:', error.message, error.details, error.hint)
+      logger.error('Supabase error adding stay:', error.message, error.details, error.hint)
       throw new Error(`Supabase error: ${error.message}`)
     }
     
@@ -63,7 +64,7 @@ export async function addStay(stay: Omit<Stay, 'id'>) {
       notes: data.notes
     } as Stay
   } catch (error) {
-    console.error('Failed to add stay to Supabase:', error)
+    logger.error('Failed to add stay to Supabase:', error)
     throw error
   }
 }
@@ -90,7 +91,7 @@ export async function updateStay(id: string, stay: Partial<Omit<Stay, 'id'>>) {
       .single()
     
     if (error) {
-      console.error('Supabase error updating stay:', error.message, error.details, error.hint)
+      logger.error('Supabase error updating stay:', error.message, error.details, error.hint)
       throw new Error(`Supabase error: ${error.message}`)
     }
     
@@ -110,7 +111,7 @@ export async function updateStay(id: string, stay: Partial<Omit<Stay, 'id'>>) {
       notes: data.notes
     } as Stay
   } catch (error) {
-    console.error('Failed to update stay in Supabase:', error)
+    logger.error('Failed to update stay in Supabase:', error)
     throw error
   }
 }
@@ -125,13 +126,13 @@ export async function deleteStay(id: string) {
       .eq('id', id)
     
     if (error) {
-      console.error('Supabase error deleting stay:', error.message, error.details, error.hint)
+      logger.error('Supabase error deleting stay:', error.message, error.details, error.hint)
       throw new Error(`Supabase error: ${error.message}`)
     }
     
     return true
   } catch (error) {
-    console.error('Failed to delete stay from Supabase:', error)
+    logger.error('Failed to delete stay from Supabase:', error)
     throw error
   }
 }

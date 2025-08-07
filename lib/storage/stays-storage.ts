@@ -1,5 +1,6 @@
 // Local storage management for stays data
 import { Stay } from '@/lib/types'
+import { logger } from '@/lib/utils/logger'
 
 const STAYS_STORAGE_KEY = 'dino-stays-data'
 const STORAGE_VERSION = '1.0'
@@ -22,14 +23,14 @@ export function loadStaysFromStorage(): Stay[] {
     
     // Version check
     if (data.version !== STORAGE_VERSION) {
-      console.warn('Storage version mismatch, clearing data')
+      logger.warn('Storage version mismatch, clearing data')
       clearStaysStorage()
       return []
     }
     
     return data.stays || []
   } catch (error) {
-    console.error('Failed to load stays from storage:', error)
+    logger.error('Failed to load stays from storage:', error)
     return []
   }
 }
@@ -48,7 +49,7 @@ export function saveStaysToStorage(stays: Stay[]): boolean {
     localStorage.setItem(STAYS_STORAGE_KEY, JSON.stringify(data))
     return true
   } catch (error) {
-    console.error('Failed to save stays to storage:', error)
+    logger.error('Failed to save stays to storage:', error)
     return false
   }
 }
@@ -73,7 +74,7 @@ export function updateStayInStorage(stayId: string, updates: Partial<Omit<Stay, 
   const stayIndex = stays.findIndex(stay => stay.id === stayId)
   
   if (stayIndex === -1) {
-    console.error('Stay not found:', stayId)
+    logger.error('Stay not found:', stayId)
     return null
   }
   
@@ -90,7 +91,7 @@ export function deleteStayFromStorage(stayId: string): boolean {
   const filteredStays = stays.filter(stay => stay.id !== stayId)
   
   if (filteredStays.length === stays.length) {
-    console.error('Stay not found:', stayId)
+    logger.error('Stay not found:', stayId)
     return false
   }
   
@@ -106,7 +107,7 @@ export function clearStaysStorage(): boolean {
     localStorage.removeItem(STAYS_STORAGE_KEY)
     return true
   } catch (error) {
-    console.error('Failed to clear stays storage:', error)
+    logger.error('Failed to clear stays storage:', error)
     return false
   }
 }

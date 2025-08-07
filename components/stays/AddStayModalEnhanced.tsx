@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Stay, Country } from '@/lib/types'
 import { addStayToStorage } from '@/lib/storage/stays-storage'
-import { createStay } from '@/lib/supabase/stays'
+import { addStay } from '@/lib/supabase/stays'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
 import { getCurrentUserEmail } from '@/lib/context/user'
 import { loadStaysFromStorage } from '@/lib/storage/stays-storage'
@@ -158,6 +158,7 @@ export default function AddStayModalEnhanced({
     if (!visaType) return
     
     // Extract days from duration string (e.g., "90 days" -> 90)
+    if (!visaType.duration) return
     const daysMatch = visaType.duration.match(/(\d+)\s*days/)
     if (!daysMatch) return
     
@@ -211,7 +212,7 @@ export default function AddStayModalEnhanced({
       }
 
       // Try to sync with Supabase in background
-      createStay({
+      addStay({
         countryCode: formData.countryCode,
         fromCountry: formData.fromCountry || undefined,
         entryDate: formData.entryDate,

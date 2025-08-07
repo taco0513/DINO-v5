@@ -231,6 +231,7 @@ export default function StayManagerEnhanced({ countries, selectedCountries, onSt
     if (!visaType) return
     
     // Extract days from duration string (e.g., "90 days" -> 90)
+    if (!visaType.duration) return
     const daysMatch = visaType.duration.match(/(\d+)\s*days/)
     if (!daysMatch) return
     

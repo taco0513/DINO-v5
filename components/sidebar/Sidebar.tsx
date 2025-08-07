@@ -558,7 +558,6 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
             </Box>
           </Box>
         </Box>
-      </Modal>
     </Drawer>
   )
 }

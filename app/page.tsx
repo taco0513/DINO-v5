@@ -27,6 +27,7 @@ import { getStays } from '@/lib/supabase/stays'
 import { loadStaysFromStorage, saveStaysToStorage } from '@/lib/storage/stays-storage'
 import { detectDateConflicts, autoResolveConflicts } from '@/lib/utils/date-conflict-resolver'
 import { countries } from '@/lib/data/countries-and-airports'
+import { logger } from '@/lib/utils/logger'
 
 export default function Home() {
   const [selectedCountry, setSelectedCountry] = useState<string>('')
@@ -45,33 +46,33 @@ export default function Home() {
       
       // Try Supabase first for most up-to-date data
       try {
-        console.log('📡 Loading from Supabase...')
+        logger.info('📡 Loading from Supabase...')
         data = await getStays()
         
         if (data.length > 0) {
-          console.log(`✅ Loaded ${data.length} stays from Supabase`)
+          logger.info(`✅ Loaded ${data.length} stays from Supabase`)
           // Save to localStorage as backup
           saveStaysToStorage(data)
         } else {
-          console.log('📊 No data in Supabase, checking localStorage...')
+          logger.info('📊 No data in Supabase, checking localStorage...')
           // If Supabase is empty, check localStorage
           data = loadStaysFromStorage()
           if (data.length > 0) {
-            console.log(`💾 Using ${data.length} stays from localStorage backup`)
+            logger.info(`💾 Using ${data.length} stays from localStorage backup`)
           }
         }
       } catch (supabaseError) {
-        console.warn('⚠️ Supabase unavailable, using localStorage:', supabaseError)
+        logger.warn('⚠️ Supabase unavailable, using localStorage:', supabaseError)
         data = loadStaysFromStorage()
         if (data.length > 0) {
-          console.log(`💾 Using ${data.length} stays from localStorage`)
+          logger.info(`💾 Using ${data.length} stays from localStorage`)
         }
       }
       
       // Auto-resolve any date conflicts
       const conflicts = detectDateConflicts(data)
       if (conflicts.some(c => c.severity === 'critical')) {
-        console.log('🔧 Auto-resolving', conflicts.length, 'date conflicts...')
+        logger.info('🔧 Auto-resolving', conflicts.length, 'date conflicts...')
         const resolvedStays = autoResolveConflicts(data)
         // Update localStorage with resolved data
         saveStaysToStorage(resolvedStays)
@@ -80,7 +81,7 @@ export default function Home() {
       
       setStays(data)
     } catch (error) {
-      console.error('Failed to load stays:', error)
+      logger.error('Failed to load stays:', error)
       setStays([])
     } finally {
       setLoading(false)
@@ -216,7 +217,7 @@ export default function Home() {
                           
                           return acc + (days > 0 ? days : 0)
                         } catch (error) {
-                          console.error('Error calculating days for stay:', stay, error)
+                          logger.error('Error calculating days for stay:', stay, error)
                           return acc
                         }
                       }, 0) : 0}
