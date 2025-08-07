@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Paper,
   Typography,
@@ -12,7 +12,8 @@ import {
   Alert,
   CircularProgress,
   Fade,
-  Collapse
+  Collapse,
+  Autocomplete
 } from '@mui/material'
 import { Country, Stay } from '@/lib/types'
 import { getStays, addStay, updateStay, deleteStay } from '@/lib/supabase/stays'
@@ -49,6 +50,11 @@ export default function StayManagerEnhanced({ countries, selectedCountries, onSt
   const [nationality] = useState('US')
   const [userEmail] = useState(getCurrentUserEmail())
   const [successMessage, setSuccessMessage] = useState('')
+  
+  // Sort countries alphabetically
+  const sortedCountries = useMemo(() => {
+    return [...countries].sort((a, b) => a.name.localeCompare(b.name))
+  }, [countries])
   
   // Form state
   const [formData, setFormData] = useState({

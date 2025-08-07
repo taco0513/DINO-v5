@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Stay, Country } from '@/lib/types'
 import { addStayToStorage } from '@/lib/storage/stays-storage'
 import { addStay } from '@/lib/supabase/stays'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
 import { getCurrentUserEmail } from '@/lib/context/user'
 import { loadStaysFromStorage } from '@/lib/storage/stays-storage'
+import { Autocomplete, TextField } from '@mui/material'
 
 interface AddStayModalEnhancedProps {
   isOpen: boolean
@@ -35,6 +36,11 @@ export default function AddStayModalEnhanced({
   const [userEmail] = useState(getCurrentUserEmail())
   const [loading, setLoading] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
+  
+  // Sort countries alphabetically
+  const sortedCountries = useMemo(() => {
+    return [...countries].sort((a, b) => a.name.localeCompare(b.name))
+  }, [countries])
   
   // Form state
   const [formData, setFormData] = useState({
@@ -317,20 +323,33 @@ export default function AddStayModalEnhanced({
                 <label htmlFor="from-country" className="block text-sm font-medium text-gray-700 mb-1">
                   From Country
                 </label>
-                <select
+                <Autocomplete
                   id="from-country"
-                  value={formData.fromCountry}
-                  onChange={(e) => handleChange('fromCountry', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  options={sortedCountries}
+                  getOptionLabel={(option) => `${option.flag} ${option.name}`}
+                  value={sortedCountries.find(c => c.code === formData.fromCountry) || null}
+                  onChange={(_, newValue) => handleChange('fromCountry', newValue?.code || '')}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Type to search..."
+                      size="small"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: '#3b82f6',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#3b82f6',
+                            borderWidth: '2px',
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                  clearOnBlur={false}
                   aria-label="Origin country"
-                >
-                  <option value="">Select origin</option>
-                  {countries.map(country => (
-                    <option key={country.code} value={country.code}>
-                      {country.flag} {country.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* To Country */}
@@ -338,27 +357,38 @@ export default function AddStayModalEnhanced({
                 <label htmlFor="to-country" className="block text-sm font-medium text-gray-700 mb-1">
                   To Country <span className="text-red-500">*</span>
                 </label>
-                <select
+                <Autocomplete
                   id="to-country"
-                  value={formData.countryCode}
-                  onChange={(e) => handleChange('countryCode', e.target.value)}
+                  options={sortedCountries}
+                  getOptionLabel={(option) => `${option.flag} ${option.name}`}
+                  value={sortedCountries.find(c => c.code === formData.countryCode) || null}
+                  onChange={(_, newValue) => handleChange('countryCode', newValue?.code || '')}
                   onBlur={() => handleBlur('countryCode')}
-                  required
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 ${
-                    touched.countryCode && errors.countryCode ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  aria-label="Destination country"
-                  aria-required="true"
-                  aria-invalid={!!errors.countryCode}
-                  aria-describedby={errors.countryCode ? 'country-error' : undefined}
-                >
-                  <option value="">Select destination</option>
-                  {countries.map(country => (
-                    <option key={country.code} value={country.code}>
-                      {country.flag} {country.name}
-                    </option>
-                  ))}
-                </select>
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Type to search..."
+                      required
+                      error={touched.countryCode && !!errors.countryCode}
+                      size="small"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: touched.countryCode && errors.countryCode ? '#ef4444' : '#3b82f6',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: touched.countryCode && errors.countryCode ? '#ef4444' : '#3b82f6',
+                            borderWidth: '2px',
+                          },
+                          '&.Mui-error fieldset': {
+                            borderColor: '#ef4444',
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                  clearOnBlur={false}
+                />
                 {touched.countryCode && errors.countryCode && (
                   <p id="country-error" className="text-red-500 text-sm mt-1" role="alert">
                     {errors.countryCode}

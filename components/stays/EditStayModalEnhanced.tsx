@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Stay, Country } from '@/lib/types'
 import { updateStayInStorage } from '@/lib/storage/stays-storage'
 import { updateStay } from '@/lib/supabase/stays'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
 import { getCurrentUserEmail } from '@/lib/context/user'
+import { Autocomplete, TextField } from '@mui/material'
 
 interface EditStayModalEnhancedProps {
   open: boolean
@@ -34,6 +35,11 @@ export default function EditStayModalEnhanced({
   const [userEmail] = useState(getCurrentUserEmail())
   const [loading, setLoading] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
+  
+  // Sort countries alphabetically
+  const sortedCountries = useMemo(() => {
+    return [...countries].sort((a, b) => a.name.localeCompare(b.name))
+  }, [countries])
   
   // Form state
   const [formData, setFormData] = useState({
