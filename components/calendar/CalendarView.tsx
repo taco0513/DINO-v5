@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { Country, VisaRule, Stay } from '@/lib/types'
-import AddStayModal from '@/components/stays/AddStayModal'
+import AddStayModalEnhanced from '@/components/stays/AddStayModalEnhanced'
 import { getStays, addStay } from '@/lib/supabase/stays'
+import { countries } from '@/lib/data/countries-and-airports'
 
 interface CalendarViewProps {
   country: Country
@@ -180,11 +181,12 @@ export default function CalendarView({ country, visaRule }: CalendarViewProps) {
       </div>
       
       {/* Add Stay Modal */}
-      <AddStayModal
+      <AddStayModalEnhanced
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onAdd={handleAddStay}
-        countryCode={country.code}
+        onAdded={loadStays}
+        countries={countries}
+        defaultCountry={country.code}
       />
     </div>
   )

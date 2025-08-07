@@ -32,9 +32,9 @@ import UserMenu from '@/components/auth/UserMenu'
 import dynamic from 'next/dynamic'
 
 // Removed Material Web Components - using pure MUI
-import Sidebar from '@/components/sidebar/Sidebar'
+import Sidebar from '@/components/sidebar/SidebarEnhanced'
 import RollingCalendar from '@/components/calendar/RollingCalendar'
-import StayManager from '@/components/stays/StayManager'
+import StayManagerEnhanced from '@/components/stays/StayManagerEnhanced'
 import StaysList from '@/components/stays/StaysList'
 import { Country, Stay } from '@/lib/types'
 import { getStays } from '@/lib/supabase/stays'
@@ -211,7 +211,7 @@ export default function CalendarPage() {
             {activeTab === 1 && (
               <Stack spacing={3}>
                 {/* Entry/Exit Records Management */}
-                <StayManager 
+                <StayManagerEnhanced 
                   countries={countries}
                   selectedCountries={selectedCountries}
                   onStaysChange={loadAllStays}

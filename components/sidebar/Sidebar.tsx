@@ -37,6 +37,7 @@ import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
 import { getCurrentUserEmail } from '@/lib/context/user'
+import AddStayModalEnhanced from '@/components/stays/AddStayModalEnhanced'
 
 interface SidebarProps {
   countries: Country[]
@@ -332,13 +333,17 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
         </List>
       </Box>
 
-      {/* Google Style Add Stay Modal */}
-      <Modal
-        open={modalOpen}
+      {/* Enhanced Add Stay Modal */}
+      <AddStayModalEnhanced
+        isOpen={modalOpen}
         onClose={handleModalClose}
-        aria-labelledby="add-stay-modal"
-        aria-describedby="add-new-stay-record"
-      >
+        onAdded={() => {
+          if (onAddStay) {
+            onAddStay(formData)
+          }
+        }}
+        countries={countries}
+      />
         <Box
           sx={{
             position: 'absolute',

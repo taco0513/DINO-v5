@@ -38,7 +38,7 @@ import {
   generateConflictSummary,
   type ResolvedStay 
 } from '@/lib/utils/date-conflict-resolver'
-import EditStayModal from './EditStayModal'
+import EditStayModalEnhanced from './EditStayModalEnhanced'
 
 interface StaysListProps {
   countries: Country[]
@@ -505,7 +505,7 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
       )}
 
       {/* Edit Modal */}
-      <EditStayModal
+      <EditStayModalEnhanced
         open={showEditModal}
         stay={editingStay}
         countries={countries}

@@ -17,7 +17,7 @@ import {
   Notifications as NotificationsIcon,
   Dashboard as DashboardIcon
 } from '@mui/icons-material'
-import Sidebar from '@/components/sidebar/Sidebar'
+import Sidebar from '@/components/sidebar/SidebarEnhanced'
 import CountryFilter from '@/components/calendar/CountryFilter'
 import VisaWarnings from '@/components/calendar/VisaWarnings'
 import StaysList from '@/components/stays/StaysList'

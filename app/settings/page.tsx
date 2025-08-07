@@ -29,7 +29,7 @@ import {
   Save as SaveIcon,
   Warning as WarningIcon
 } from '@mui/icons-material'
-import Sidebar from '@/components/sidebar/Sidebar'
+import Sidebar from '@/components/sidebar/SidebarEnhanced'
 import { useTheme as useCustomTheme } from '@/lib/context/ThemeContext'
 import { useTranslation } from '@/lib/i18n/translations'
 import { checkPassportExpiry, checkPassportValidityForTravel } from '@/lib/utils/passport-warnings'
