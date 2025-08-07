@@ -2,6 +2,8 @@
 
 A Digital Nomad visa tracking application for managing stay durations across multiple countries. Helps US passport holders track their visa compliance and remaining days in each country.
 
+_Last deployment: January 7, 2025_
+
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat&logo=next.js&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)
