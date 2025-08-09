@@ -29,6 +29,9 @@ import {
 } from '@mui/icons-material'
 import { Country, Stay } from '@/lib/types'
 import { calculateAllVisaStatuses, type VisaStatus, type VisaCalculationContext } from '@/lib/visa-calculations/visa-engine'
+import { getCurrentUserEmail } from '@/lib/context/user'
+import { feedbackService } from '@/lib/services/feedback-service'
+import FeedbackButton from '@/components/feedback/FeedbackButton'
 // import { useSettings } from '@/lib/context/SettingsContext' // TODO: Create SettingsContext
 
 interface VisaWarningsProps {
@@ -43,6 +46,7 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
   const [visaStatuses, setVisaStatuses] = useState<VisaStatus[]>([])
   const [expanded, setExpanded] = useState(true)
   const [loading, setLoading] = useState(true)
+  const userEmail = getCurrentUserEmail()
 
   useEffect(() => {
     calculateStatuses()
@@ -90,6 +94,16 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
   const getProgressValue = (visaStatus: VisaStatus) => {
     if (visaStatus.totalAllowedDays === 0) return 0
     return Math.min((visaStatus.daysUsed / visaStatus.totalAllowedDays) * 100, 100)
+  }
+
+  const handleFeedbackSubmit = async (report: any) => {
+    try {
+      await feedbackService.submitReport(report)
+      console.log('Feedback submitted successfully')
+    } catch (error) {
+      console.error('Failed to submit feedback:', error)
+      throw error
+    }
   }
 
   const criticalStatuses = visaStatuses.filter(vs => vs.status === 'exceeded' || vs.status === 'critical')
@@ -213,9 +227,24 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
                     icon={getStatusIcon(visaStatus.status)}
                     sx={{ borderRadius: 2 }}
                   >
-                    <AlertTitle>
-                      {country?.flag} {country?.name} - {visaStatus.status === 'exceeded' ? 'Visa Exceeded' : 'Critical'}
-                    </AlertTitle>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <AlertTitle>
+                        {country?.flag} {country?.name} - {visaStatus.status === 'exceeded' ? 'Visa Exceeded' : 'Critical'}
+                      </AlertTitle>
+                      {userEmail && country && (
+                        <FeedbackButton
+                          countryCode={country.code}
+                          countryName={country.name}
+                          currentVisaInfo={{
+                            duration: visaStatus.totalAllowedDays,
+                            visaRequired: true,
+                            resetType: visaStatus.rule?.resetType || 'unknown'
+                          }}
+                          userEmail={userEmail}
+                          onSubmit={handleFeedbackSubmit}
+                        />
+                      )}
+                    </Box>
                     {visaStatus.warningMessage && (
                       <Typography variant="body2">
                         {visaStatus.warningMessage}
@@ -250,9 +279,24 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
                     icon={getStatusIcon(visaStatus.status)}
                     sx={{ borderRadius: 2 }}
                   >
-                    <AlertTitle>
-                      {country?.flag} {country?.name} - Warning
-                    </AlertTitle>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <AlertTitle>
+                        {country?.flag} {country?.name} - Warning
+                      </AlertTitle>
+                      {userEmail && country && (
+                        <FeedbackButton
+                          countryCode={country.code}
+                          countryName={country.name}
+                          currentVisaInfo={{
+                            duration: visaStatus.totalAllowedDays,
+                            visaRequired: true,
+                            resetType: visaStatus.rule?.resetType || 'unknown'
+                          }}
+                          userEmail={userEmail}
+                          onSubmit={handleFeedbackSubmit}
+                        />
+                      )}
+                    </Box>
                     {visaStatus.warningMessage && (
                       <Typography variant="body2">
                         {visaStatus.warningMessage}
@@ -297,6 +341,19 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
                             size="small"
                             variant="outlined"
                           />
+                          {userEmail && country && (
+                            <FeedbackButton
+                              countryCode={country.code}
+                              countryName={country.name}
+                              currentVisaInfo={{
+                                duration: visaStatus.totalAllowedDays,
+                                visaRequired: true,
+                                resetType: visaStatus.rule?.resetType || 'unknown'
+                              }}
+                              userEmail={userEmail}
+                              onSubmit={handleFeedbackSubmit}
+                            />
+                          )}
                         </Stack>
                       }
                       secondary={
