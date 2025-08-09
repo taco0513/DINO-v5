@@ -351,34 +351,34 @@ export default function AddStayModalEnhanced({
               {/* Entry City */}
               <div>
                 <label htmlFor="entry-city" className="block text-sm font-medium text-gray-700 mb-1">
-                  Arrival Airport/City
+                  Departure Airport/City
                 </label>
                 <input
                   id="entry-city"
                   type="text"
                   value={formData.entryCity}
                   onChange={(e) => handleChange('entryCity', e.target.value.toUpperCase())}
-                  placeholder="e.g., ICN, BKK"
+                  placeholder="e.g., ICN, GMP"
                   maxLength={5}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  aria-label="Arrival airport or city code"
+                  aria-label="Departure airport or city code"
                 />
               </div>
 
               {/* Exit City */}
               <div>
                 <label htmlFor="exit-city" className="block text-sm font-medium text-gray-700 mb-1">
-                  Departure Airport/City
+                  Arrival Airport/City
                 </label>
                 <input
                   id="exit-city"
                   type="text"
                   value={formData.exitCity}
                   onChange={(e) => handleChange('exitCity', e.target.value.toUpperCase())}
-                  placeholder="e.g., NRT, SIN"
+                  placeholder="e.g., SGN, HAN"
                   maxLength={5}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  aria-label="Departure airport or city code"
+                  aria-label="Arrival airport or city code"
                 />
               </div>
             </div>
