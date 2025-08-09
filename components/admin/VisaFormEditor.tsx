@@ -24,7 +24,8 @@ import {
   FormControlLabel,
   Grid,
   Alert,
-  useTheme
+  useTheme,
+  Autocomplete
 } from '@mui/material'
 import {
   ExpandMore as ExpandMoreIcon,
@@ -621,21 +622,76 @@ export default function VisaFormEditor({
         <Stack spacing={3} sx={{ mt: 2 }}>
           <Grid container spacing={2}>
             <Grid size={{ xs: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>Country</InputLabel>
-                <Select
-                  value={formData.countryCode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, countryCode: e.target.value }))}
-                  label="Country"
-                  disabled={!!initialData}
-                >
-                  {countries.map(country => (
-                    <MenuItem key={country.code} value={country.code}>
-                      {country.flag} {country.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                fullWidth
+                options={countries.sort((a, b) => a.name.localeCompare(b.name))}
+                getOptionLabel={(option) => typeof option === 'string' ? option : `${option.flag} ${option.name}`}
+                value={countries.find(c => c.code === formData.countryCode) || formData.countryCode || null}
+                onChange={(_, newValue) => {
+                  if (typeof newValue === 'string') {
+                    // Direct input - use the string as country code
+                    setFormData(prev => ({ ...prev, countryCode: newValue.toUpperCase() }))
+                  } else if (newValue) {
+                    // Selected from list
+                    setFormData(prev => ({ ...prev, countryCode: newValue.code }))
+                  } else {
+                    // Cleared
+                    setFormData(prev => ({ ...prev, countryCode: '' }))
+                  }
+                }}
+                onInputChange={(_, newInputValue) => {
+                  // Update the input field for direct typing
+                  if (!countries.find(c => c.name.toLowerCase().includes(newInputValue.toLowerCase()))) {
+                    // If it's not matching any country, treat as custom input
+                    setFormData(prev => ({ ...prev, countryCode: newInputValue.toUpperCase() }))
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Country"
+                    placeholder="Search, select, or type country code..."
+                    helperText="Select from list or type custom country code (e.g., 'XYZ')"
+                  />
+                )}
+                freeSolo={!initialData}
+                disabled={!!initialData}
+                renderOption={(props, option) => (
+                  <Box component="li" {...props} key={option.code}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <span>{option.flag}</span>
+                      <span>{option.name}</span>
+                      <Box component="span" sx={{ 
+                        ml: 'auto', 
+                        fontSize: '0.75rem', 
+                        color: 'text.secondary',
+                        fontFamily: 'monospace'
+                      }}>
+                        {option.code}
+                      </Box>
+                    </Box>
+                  </Box>
+                )}
+                filterOptions={(options, params) => {
+                  const filtered = options.filter(option => 
+                    option.name.toLowerCase().includes(params.inputValue.toLowerCase()) ||
+                    option.code.toLowerCase().includes(params.inputValue.toLowerCase())
+                  )
+                  
+                  // If input doesn't match any existing country and is not empty
+                  if (params.inputValue !== '' && 
+                      !filtered.length && 
+                      params.inputValue.length >= 2) {
+                    filtered.push({
+                      code: params.inputValue.toUpperCase(),
+                      name: `Custom: ${params.inputValue.toUpperCase()}`,
+                      flag: '🌍'
+                    })
+                  }
+                  
+                  return filtered
+                }}
+              />
             </Grid>
             <Grid size={{ xs: 6 }}>
               <FormControl fullWidth>
