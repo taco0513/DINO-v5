@@ -20,7 +20,9 @@ import {
 import {
   Dashboard as DashboardIcon,
   Event as EventIcon,
+  Map as MapIcon,
   Settings as SettingsIcon,
+  AdminPanelSettings as AdminIcon,
   Person,
   Key,
   Menu as MenuIcon,
@@ -67,11 +69,20 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
     return () => subscription.unsubscribe()
   }, [])
   
+  // Check if user is admin
+  const isAdmin = user?.email === 'zbrianjin@gmail.com'
+  
   // Material Design 2 Navigation menu structure
   const menuItems = [
     { href: '/', label: 'Dashboard', icon: DashboardIcon },
     { href: '/calendar', label: 'Calendar', icon: EventIcon },
+    { href: '/guide', label: 'Travel Guide', icon: MapIcon },
   ]
+
+  // Add admin menu for authorized users
+  if (isAdmin) {
+    menuItems.push({ href: '/admin', label: 'Admin', icon: AdminIcon })
+  }
 
   const handleAuthToggle = async () => {
     if (user) {

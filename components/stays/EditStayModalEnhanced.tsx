@@ -6,7 +6,7 @@ import { updateStayInStorage } from '@/lib/storage/stays-storage'
 import { updateStay } from '@/lib/supabase/stays'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
 import { getCurrentUserEmail } from '@/lib/context/user'
-import { Autocomplete, TextField } from '@mui/material'
+import CountrySelect from '@/components/ui/CountrySelect'
 
 interface EditStayModalEnhancedProps {
   open: boolean
@@ -298,51 +298,30 @@ export default function EditStayModalEnhanced({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* From Country */}
               <div>
-                <label htmlFor="from-country" className="block text-sm font-medium text-gray-700 mb-1">
-                  From Country
-                </label>
-                <select
+                <CountrySelect
                   id="from-country"
                   value={formData.fromCountry}
-                  onChange={(e) => handleChange('fromCountry', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  aria-label="Origin country"
-                >
-                  <option value="">Select origin</option>
-                  {countries.map(country => (
-                    <option key={country.code} value={country.code}>
-                      {country.flag} {country.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => handleChange('fromCountry', value)}
+                  countries={countries}
+                  label="From Country"
+                  placeholder="Type to search..."
+                />
                 <p className="text-xs text-gray-500 mt-1">Where did you travel from?</p>
               </div>
 
               {/* To Country */}
               <div>
-                <label htmlFor="to-country" className="block text-sm font-medium text-gray-700 mb-1">
-                  To Country <span className="text-red-500">*</span>
-                </label>
-                <select
+                <CountrySelect
                   id="to-country"
                   value={formData.countryCode}
-                  onChange={(e) => handleCountryChange(e.target.value)}
+                  onChange={(value) => handleCountryChange(value)}
                   onBlur={() => handleBlur('countryCode')}
+                  countries={countries}
+                  label="To Country"
+                  placeholder="Type to search..."
                   required
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 ${
-                    touched.countryCode && errors.countryCode ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  aria-label="Destination country"
-                  aria-required="true"
-                  aria-invalid={!!errors.countryCode}
-                  aria-describedby={errors.countryCode ? 'country-error' : 'country-helper'}
-                >
-                  {countries.map(country => (
-                    <option key={country.code} value={country.code}>
-                      {country.flag} {country.name}
-                    </option>
-                  ))}
-                </select>
+                  error={touched.countryCode && !!errors.countryCode}
+                />
                 {touched.countryCode && errors.countryCode ? (
                   <p id="country-error" className="text-red-500 text-sm mt-1" role="alert">
                     {errors.countryCode}

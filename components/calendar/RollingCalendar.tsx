@@ -36,7 +36,6 @@ import {
   RestartAlt as ResetIcon
 } from '@mui/icons-material'
 import { Country, Stay } from '@/lib/types'
-import { cardBoxStyle } from '@/lib/styles/common'
 import { calculateAllVisaStatuses, calculateVisaStatus, type VisaCalculationContext } from '@/lib/visa-calculations/visa-engine'
 import { getCurrentUserEmail } from '@/lib/context/user'
 
@@ -605,7 +604,16 @@ export default function RollingCalendar({
   const today = new Date()
   
   return (
-    <Box sx={cardBoxStyle}>
+    <Box sx={{
+      p: 0,
+      minHeight: 50,
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: 'white',
+      border: '1px solid',
+      borderColor: theme.palette.divider,
+      borderRadius: 2
+    }}>
       {/* Ultra Minimal Google Style Header */}
       <Box sx={{ 
         display: 'flex', 

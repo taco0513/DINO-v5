@@ -10,7 +10,8 @@ import {
   Grid,
   AppBar,
   Toolbar,
-  IconButton
+  IconButton,
+  useTheme
 } from '@mui/material'
 import {
   Search as SearchIcon,
@@ -22,6 +23,7 @@ import CountryFilter from '@/components/calendar/CountryFilter'
 import VisaWarnings from '@/components/calendar/VisaWarnings'
 import StaysList from '@/components/stays/StaysList'
 import UserMenu from '@/components/auth/UserMenu'
+import ModularDashboard from '@/components/dashboard/ModularDashboard'
 import { Country, Stay } from '@/lib/types'
 import { getStays } from '@/lib/supabase/stays'
 import { loadStaysFromStorage, saveStaysToStorage } from '@/lib/storage/stays-storage'
@@ -34,6 +36,7 @@ export default function Home() {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([])
   const [stays, setStays] = useState<Stay[]>([])
   const [loading, setLoading] = useState(true)
+  const theme = useTheme()
 
   useEffect(() => {
     loadAllStays()
@@ -89,7 +92,7 @@ export default function Home() {
   }
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'white' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
       <Sidebar 
         countries={countries}
         selectedCountry={selectedCountry}
@@ -98,29 +101,28 @@ export default function Home() {
         onAddStay={loadAllStays}
       />
       
-      <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#f8f9fa' }}>
+      <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
         {/* Material Design 3 Style Header */}
         <AppBar 
           position="sticky" 
           elevation={0}
           sx={{ 
-            backgroundColor: 'white',
-            borderBottom: '1px solid #e8eaed',
+            backgroundColor: theme.palette.background.paper,
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            color: theme.palette.text.primary,
             top: 0,
             zIndex: 100
           }}
         >
           <Toolbar sx={{ px: { xs: 2, md: 3 } }}>
-            <DashboardIcon sx={{ color: '#1a73e8', mr: 2 }} />
+            <DashboardIcon sx={{ color: theme.palette.primary.main, mr: 2 }} />
             <Typography 
               variant="h6" 
               component="h1" 
               sx={{ 
                 flexGrow: 1,
-                color: '#202124',
-                fontFamily: 'Google Sans, Roboto, sans-serif',
-                fontWeight: 500,
-                fontSize: '1.125rem'
+                color: theme.palette.text.primary,
+                fontWeight: 500
               }}
             >
               Dashboard
@@ -129,14 +131,14 @@ export default function Home() {
             {/* Action Bar */}
             <Stack direction="row" spacing={1} alignItems="center">
               <IconButton 
-                sx={{ color: '#5f6368' }}
+                sx={{ color: theme.palette.text.secondary }}
                 size="small"
               >
                 <SearchIcon fontSize="small" />
               </IconButton>
               
               <IconButton 
-                sx={{ color: '#5f6368' }}
+                sx={{ color: theme.palette.text.secondary }}
                 size="small"
               >
                 <NotificationsIcon fontSize="small" />
@@ -149,23 +151,26 @@ export default function Home() {
 
         {/* Main Content Area */}
         <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-          <Container maxWidth="xl" sx={{ py: 3 }}>
+          <Container maxWidth="xl" sx={{ py: theme.spacing(3) }}>
           
           <Stack spacing={3}>
-            {/* Quick Stats Cards */}
-            <Grid container spacing={3}>
+            {/* Modular Dashboard */}
+            <ModularDashboard stays={stays} />
+            
+            {/* Quick Stats Cards - Hidden for now, replaced by modular dashboard */}
+            <Grid container spacing={3} sx={{ display: 'none' }}>
               <Grid size={{ xs: 12, md: 6, lg: 3 }}>
                 <Paper 
                   elevation={0}
                   sx={{ 
-                    p: 3, 
-                    border: '1px solid #e8eaed',
-                    borderRadius: 2,
+                    p: theme.spacing(3),
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: theme.shape.borderRadius,
+                    transition: 'all 0.3s ease',
                     '&:hover': {
-                      boxShadow: '0 1px 6px 0 rgba(32,33,36,.28)',
+                      boxShadow: theme.shadows[2],
                       borderColor: 'transparent'
-                    },
-                    transition: 'all 0.3s ease'
+                    }
                   }}
                 >
                   <Stack spacing={1}>
@@ -183,14 +188,14 @@ export default function Home() {
                 <Paper 
                   elevation={0}
                   sx={{ 
-                    p: 3, 
-                    border: '1px solid #e8eaed',
-                    borderRadius: 2,
+                    p: theme.spacing(3),
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: theme.shape.borderRadius,
+                    transition: 'all 0.3s ease',
                     '&:hover': {
-                      boxShadow: '0 1px 6px 0 rgba(32,33,36,.28)',
+                      boxShadow: theme.shadows[2],
                       borderColor: 'transparent'
-                    },
-                    transition: 'all 0.3s ease'
+                    }
                   }}
                 >
                   <Stack spacing={1}>

@@ -7,7 +7,7 @@ import { addStay } from '@/lib/supabase/stays'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
 import { getCurrentUserEmail } from '@/lib/context/user'
 import { loadStaysFromStorage } from '@/lib/storage/stays-storage'
-import { Autocomplete, TextField } from '@mui/material'
+import CountrySelect from '@/components/ui/CountrySelect'
 
 interface AddStayModalEnhancedProps {
   isOpen: boolean
@@ -319,75 +319,27 @@ export default function AddStayModalEnhanced({
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* From Country */}
-              <div>
-                <label htmlFor="from-country" className="block text-sm font-medium text-gray-700 mb-1">
-                  From Country
-                </label>
-                <Autocomplete
-                  id="from-country"
-                  options={sortedCountries}
-                  getOptionLabel={(option) => `${option.flag} ${option.name}`}
-                  value={sortedCountries.find(c => c.code === formData.fromCountry) || null}
-                  onChange={(_, newValue) => handleChange('fromCountry', newValue?.code || '')}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Type to search..."
-                      size="small"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#3b82f6',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#3b82f6',
-                            borderWidth: '2px',
-                          },
-                        },
-                      }}
-                    />
-                  )}
-                  clearOnBlur={false}
-                  aria-label="Origin country"
-                />
-              </div>
+              <CountrySelect
+                id="from-country"
+                value={formData.fromCountry}
+                onChange={(value) => handleChange('fromCountry', value)}
+                countries={countries}
+                label="From Country"
+                placeholder="Type to search..."
+              />
 
               {/* To Country */}
               <div>
-                <label htmlFor="to-country" className="block text-sm font-medium text-gray-700 mb-1">
-                  To Country <span className="text-red-500">*</span>
-                </label>
-                <Autocomplete
+                <CountrySelect
                   id="to-country"
-                  options={sortedCountries}
-                  getOptionLabel={(option) => `${option.flag} ${option.name}`}
-                  value={sortedCountries.find(c => c.code === formData.countryCode) || null}
-                  onChange={(_, newValue) => handleChange('countryCode', newValue?.code || '')}
+                  value={formData.countryCode}
+                  onChange={(value) => handleChange('countryCode', value)}
                   onBlur={() => handleBlur('countryCode')}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Type to search..."
-                      required
-                      error={touched.countryCode && !!errors.countryCode}
-                      size="small"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: touched.countryCode && errors.countryCode ? '#ef4444' : '#3b82f6',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: touched.countryCode && errors.countryCode ? '#ef4444' : '#3b82f6',
-                            borderWidth: '2px',
-                          },
-                          '&.Mui-error fieldset': {
-                            borderColor: '#ef4444',
-                          },
-                        },
-                      }}
-                    />
-                  )}
-                  clearOnBlur={false}
+                  countries={countries}
+                  label="To Country"
+                  placeholder="Type to search..."
+                  required
+                  error={touched.countryCode && !!errors.countryCode}
                 />
                 {touched.countryCode && errors.countryCode && (
                   <p id="country-error" className="text-red-500 text-sm mt-1" role="alert">

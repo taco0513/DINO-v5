@@ -1,79 +1,126 @@
 import { createTheme } from '@mui/material/styles'
+import { red, blue, teal, green, orange, grey } from '@mui/material/colors'
 
-// Material Design 2 테마 (2020-2023 Google Apps 스타일)
+// Extend the theme interface for custom Google colors
+declare module '@mui/material/styles' {
+  interface Palette {
+    google: {
+      blue: string
+      red: string
+      yellow: string
+      green: string
+      grey: string
+      greyLight: string
+      greyDark: string
+      surface: string
+      border: string
+      borderLight: string
+    }
+  }
+  interface PaletteOptions {
+    google?: {
+      blue: string
+      red: string
+      yellow: string
+      green: string
+      grey: string
+      greyLight: string
+      greyDark: string
+      surface: string
+      border: string
+      borderLight: string
+    }
+  }
+}
+
+// Material Design 2 + Google Brand Colors 통합 테마
 export const theme = createTheme({
   palette: {
     mode: 'light',
-    // Material Design 2 Primary Colors
+    // MD2 Primary Colors with Google Blue
     primary: {
-      main: '#1976d2',    // Material Blue 700
-      light: '#42a5f5',   // Material Blue 400
-      dark: '#1565c0',    // Material Blue 800
+      main: '#1a73e8',      // Google Blue (primary brand color)
+      light: '#4285f4',     // Lighter Google Blue
+      dark: '#1557b0',      // Darker Google Blue
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#dc004e',    // Material Pink A400
-      light: '#ff5983',
-      dark: '#9a0036',
+      main: teal[600],      // MD2 Teal for accents
+      light: teal[400],
+      dark: teal[800],
       contrastText: '#ffffff',
     },
     error: {
-      main: '#f44336',    // Material Red 500
-      light: '#e57373',
-      dark: '#d32f2f',
+      main: '#d93025',      // Google Red
+      light: '#ea4335',
+      dark: '#a50e0e',
       contrastText: '#ffffff',
     },
     warning: {
-      main: '#ff9800',    // Material Orange 500
-      light: '#ffb74d',
-      dark: '#f57c00',
+      main: '#fbbc04',      // Google Yellow
+      light: '#fdd663',
+      dark: '#f9ab00',
       contrastText: '#000000',
     },
     info: {
-      main: '#2196f3',    // Material Blue 500
-      light: '#64b5f6',
-      dark: '#1976d2',
+      main: '#4285f4',      // Google Blue (lighter)
+      light: '#669df6',
+      dark: '#1a73e8',
       contrastText: '#ffffff',
     },
     success: {
-      main: '#4caf50',    // Material Green 500
-      light: '#81c784',
-      dark: '#388e3c',
+      main: '#0f9d58',      // Google Green (classic)
+      light: '#34a853',     // Google Green (current)
+      dark: '#0d7940',
       contrastText: '#ffffff',
     },
-    // Material Design 2 Background
+    // Google-specific colors
+    google: {
+      blue: '#1a73e8',      // Primary Google Blue
+      red: '#ea4335',       // Google Red
+      yellow: '#fbbc04',    // Google Yellow
+      green: '#34a853',     // Google Green
+      grey: '#5f6368',      // Google Grey 700
+      greyLight: '#70757a', // Google Grey 600
+      greyDark: '#202124',  // Google Grey 900
+      surface: '#f8f9fa',   // Google Surface
+      border: '#dadce0',    // Google Border
+      borderLight: '#e8eaed', // Google Light Border
+    },
+    // MD2 Background with Google colors
     background: {
-      default: '#fafafa',  // Material Grey 50
+      default: '#ffffff',   // Clean white background
       paper: '#ffffff',
     },
     text: {
-      primary: 'rgba(0, 0, 0, 0.87)',
-      secondary: 'rgba(0, 0, 0, 0.6)',
-      disabled: 'rgba(0, 0, 0, 0.38)',
+      primary: '#202124',   // Google Grey 900
+      secondary: '#5f6368', // Google Grey 700
+      disabled: '#9aa0a6',  // Google Grey 500
     },
     grey: {
-      50: '#fafafa',
-      100: '#f5f5f5',
-      200: '#eeeeee',
-      300: '#e0e0e0',
-      400: '#bdbdbd',
-      500: '#9e9e9e',
-      600: '#757575',
-      700: '#616161',
-      800: '#424242',
-      900: '#212121',
+      50: '#f8f9fa',
+      100: '#f1f3f4',
+      200: '#e8eaed',
+      300: '#dadce0',
+      400: '#bdc1c6',
+      500: '#9aa0a6',
+      600: '#80868b',
+      700: '#5f6368',
+      800: '#3c4043',
+      900: '#202124',
     },
-    divider: 'rgba(0, 0, 0, 0.12)',
+    divider: '#e8eaed',     // Google Light Border
     action: {
       hover: 'rgba(0, 0, 0, 0.04)',
-      selected: 'rgba(0, 0, 0, 0.08)',
+      selected: 'rgba(26, 115, 232, 0.08)', // Google Blue with opacity
       disabled: 'rgba(0, 0, 0, 0.26)',
       disabledBackground: 'rgba(0, 0, 0, 0.12)',
     },
   },
   typography: {
-    // Material Design 2 Typography Scale
+    // Google Sans + Roboto fallback
     fontFamily: [
+      '"Google Sans"',
       'Roboto',
       '-apple-system',
       'BlinkMacSystemFont',
@@ -82,130 +129,226 @@ export const theme = createTheme({
       'Arial',
       'sans-serif',
     ].join(','),
-    // Material Design 2 Headlines
+    // MD2 Type Scale with Google adjustments
     h1: {
-      fontSize: '6rem',
+      fontSize: '96px',
       fontWeight: 300,
-      letterSpacing: '-0.01562em',
+      letterSpacing: '-1.5px',
       lineHeight: 1.167,
     },
     h2: {
-      fontSize: '3.75rem',
+      fontSize: '60px',
       fontWeight: 300,
-      letterSpacing: '-0.00833em',
+      letterSpacing: '-0.5px',
       lineHeight: 1.2,
     },
     h3: {
-      fontSize: '3rem',
+      fontSize: '48px',
       fontWeight: 400,
-      letterSpacing: '0em',
+      letterSpacing: '0px',
       lineHeight: 1.167,
     },
     h4: {
-      fontSize: '2.125rem',
+      fontSize: '34px',
       fontWeight: 400,
-      letterSpacing: '0.00735em',
+      letterSpacing: '0.25px',
       lineHeight: 1.235,
     },
     h5: {
-      fontSize: '1.5rem',
+      fontSize: '24px',
       fontWeight: 400,
-      letterSpacing: '0em',
+      letterSpacing: '0px',
       lineHeight: 1.334,
     },
     h6: {
-      fontSize: '1.25rem',
+      fontSize: '20px',
       fontWeight: 500,
-      letterSpacing: '0.0075em',
+      letterSpacing: '0.15px',
       lineHeight: 1.6,
     },
-    // Material Design 2 Body Text
-    body1: {
-      fontSize: '1rem',
+    subtitle1: {
+      fontSize: '16px',
       fontWeight: 400,
-      letterSpacing: '0.00938em',
+      letterSpacing: '0.15px',
+      lineHeight: 1.75,
+    },
+    subtitle2: {
+      fontSize: '14px',
+      fontWeight: 500,
+      letterSpacing: '0.1px',
+      lineHeight: 1.57,
+    },
+    body1: {
+      fontSize: '16px',
+      fontWeight: 400,
+      letterSpacing: '0.5px',
       lineHeight: 1.5,
     },
     body2: {
-      fontSize: '0.875rem',
+      fontSize: '14px',
       fontWeight: 400,
-      letterSpacing: '0.01071em',
+      letterSpacing: '0.25px',
       lineHeight: 1.43,
     },
     button: {
-      fontSize: '0.875rem',
+      fontSize: '14px',
       fontWeight: 500,
-      letterSpacing: '0.02857em',
+      letterSpacing: '1.25px',
       lineHeight: 1.75,
       textTransform: 'uppercase',
     },
     caption: {
-      fontSize: '0.75rem',
+      fontSize: '12px',
       fontWeight: 400,
-      letterSpacing: '0.03333em',
+      letterSpacing: '0.4px',
       lineHeight: 1.66,
     },
-    subtitle1: {
-      fontSize: '1rem',
+    overline: {
+      fontSize: '10px',
       fontWeight: 400,
-      letterSpacing: '0.00938em',
-      lineHeight: 1.75,
-    },
-    subtitle2: {
-      fontSize: '0.875rem',
-      fontWeight: 500,
-      letterSpacing: '0.00714em',
-      lineHeight: 1.57,
+      letterSpacing: '1.5px',
+      lineHeight: 2.66,
+      textTransform: 'uppercase',
     },
   },
-  // Material Design 2 Shapes
+  // MD2 Shape with Google style
   shape: {
-    borderRadius: 4,  // Material Design 2 standard radius
+    borderRadius: 8,  // Google's preferred radius (between 4-8px)
   },
-  // Material Design 2 Spacing Scale (8px base)
+  // MD2 Spacing Scale (8px base)
   spacing: 8,
+  // MD2 Shadows
+  shadows: [
+    'none',
+    // Elevation 1
+    '0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12)',
+    // Elevation 2
+    '0px 3px 1px -2px rgba(0,0,0,0.2),0px 2px 2px 0px rgba(0,0,0,0.14),0px 1px 5px 0px rgba(0,0,0,0.12)',
+    // Elevation 3
+    '0px 3px 3px -2px rgba(0,0,0,0.2),0px 3px 4px 0px rgba(0,0,0,0.14),0px 1px 8px 0px rgba(0,0,0,0.12)',
+    // Elevation 4
+    '0px 2px 4px -1px rgba(0,0,0,0.2),0px 4px 5px 0px rgba(0,0,0,0.14),0px 1px 10px 0px rgba(0,0,0,0.12)',
+    // Elevation 5
+    '0px 3px 5px -1px rgba(0,0,0,0.2),0px 5px 8px 0px rgba(0,0,0,0.14),0px 1px 14px 0px rgba(0,0,0,0.12)',
+    // Elevation 6
+    '0px 3px 5px -1px rgba(0,0,0,0.2),0px 6px 10px 0px rgba(0,0,0,0.14),0px 1px 18px 0px rgba(0,0,0,0.12)',
+    // Elevation 7
+    '0px 4px 5px -2px rgba(0,0,0,0.2),0px 7px 10px 1px rgba(0,0,0,0.14),0px 2px 16px 1px rgba(0,0,0,0.12)',
+    // Elevation 8
+    '0px 5px 5px -3px rgba(0,0,0,0.2),0px 8px 10px 1px rgba(0,0,0,0.14),0px 3px 14px 2px rgba(0,0,0,0.12)',
+    // Additional elevations for Google style
+    '0px 5px 6px -3px rgba(0,0,0,0.2),0px 9px 12px 1px rgba(0,0,0,0.14),0px 3px 16px 2px rgba(0,0,0,0.12)',
+    '0px 6px 6px -3px rgba(0,0,0,0.2),0px 10px 14px 1px rgba(0,0,0,0.14),0px 4px 18px 3px rgba(0,0,0,0.12)',
+    '0px 6px 7px -4px rgba(0,0,0,0.2),0px 11px 15px 1px rgba(0,0,0,0.14),0px 4px 20px 3px rgba(0,0,0,0.12)',
+    '0px 7px 8px -4px rgba(0,0,0,0.2),0px 12px 17px 2px rgba(0,0,0,0.14),0px 5px 22px 4px rgba(0,0,0,0.12)',
+    '0px 7px 8px -4px rgba(0,0,0,0.2),0px 13px 19px 2px rgba(0,0,0,0.14),0px 5px 24px 4px rgba(0,0,0,0.12)',
+    '0px 7px 9px -4px rgba(0,0,0,0.2),0px 14px 21px 2px rgba(0,0,0,0.14),0px 5px 26px 4px rgba(0,0,0,0.12)',
+    '0px 8px 9px -5px rgba(0,0,0,0.2),0px 15px 22px 2px rgba(0,0,0,0.14),0px 6px 28px 5px rgba(0,0,0,0.12)',
+    '0px 8px 10px -5px rgba(0,0,0,0.2),0px 16px 24px 2px rgba(0,0,0,0.14),0px 6px 30px 5px rgba(0,0,0,0.12)',
+    '0px 8px 11px -5px rgba(0,0,0,0.2),0px 17px 26px 2px rgba(0,0,0,0.14),0px 6px 32px 5px rgba(0,0,0,0.12)',
+    '0px 9px 11px -5px rgba(0,0,0,0.2),0px 18px 28px 2px rgba(0,0,0,0.14),0px 7px 34px 6px rgba(0,0,0,0.12)',
+    '0px 9px 12px -6px rgba(0,0,0,0.2),0px 19px 29px 2px rgba(0,0,0,0.14),0px 7px 36px 6px rgba(0,0,0,0.12)',
+    '0px 10px 13px -6px rgba(0,0,0,0.2),0px 20px 31px 3px rgba(0,0,0,0.14),0px 8px 38px 7px rgba(0,0,0,0.12)',
+    '0px 10px 13px -6px rgba(0,0,0,0.2),0px 21px 33px 3px rgba(0,0,0,0.14),0px 8px 40px 7px rgba(0,0,0,0.12)',
+    '0px 10px 14px -6px rgba(0,0,0,0.2),0px 22px 35px 3px rgba(0,0,0,0.14),0px 8px 42px 7px rgba(0,0,0,0.12)',
+    '0px 11px 14px -7px rgba(0,0,0,0.2),0px 23px 36px 3px rgba(0,0,0,0.14),0px 9px 44px 8px rgba(0,0,0,0.12)',
+    '0px 11px 15px -7px rgba(0,0,0,0.2),0px 24px 38px 3px rgba(0,0,0,0.14),0px 9px 46px 8px rgba(0,0,0,0.12)',
+  ],
   components: {
-    // Material Design 2 Component Overrides
+    // Material Design 2 Component Overrides with Google style
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          scrollbarColor: '#bdc1c6 #f8f9fa',
+          '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
+            width: '8px',
+            height: '8px',
+          },
+          '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
+            borderRadius: 8,
+            backgroundColor: '#bdc1c6',
+            border: '2px solid #f8f9fa',
+          },
+          '&::-webkit-scrollbar-track, & *::-webkit-scrollbar-track': {
+            borderRadius: 8,
+            backgroundColor: '#f8f9fa',
+          },
+        },
+      },
+    },
     MuiPaper: {
       styleOverrides: {
         root: {
           backgroundImage: 'none',
         },
-        elevation1: {
-          boxShadow: '0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12)',
+        rounded: {
+          borderRadius: 8,
         },
-        elevation3: {
-          boxShadow: '0px 3px 3px -2px rgba(0,0,0,0.2),0px 3px 4px 0px rgba(0,0,0,0.14),0px 1px 8px 0px rgba(0,0,0,0.12)',
+        outlined: {
+          border: '1px solid #e8eaed',
+        },
+      },
+      defaultProps: {
+        elevation: 1,
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          border: '1px solid #e8eaed',
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: '0px 1px 2px 0px rgba(60,64,67,0.3), 0px 1px 3px 1px rgba(60,64,67,0.15)',
+          },
+          transition: 'box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1)',
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 4,  // Material Design 2 standard radius
-          textTransform: 'uppercase',
+          borderRadius: 4,
+          textTransform: 'none',  // Google style: no uppercase
           fontWeight: 500,
+          fontSize: '14px',
+          letterSpacing: '0.25px',
+          padding: '8px 24px',
+          transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
         },
         contained: {
-          boxShadow: '0px 3px 1px -2px rgba(0,0,0,0.2),0px 2px 2px 0px rgba(0,0,0,0.14),0px 1px 5px 0px rgba(0,0,0,0.12)',
+          boxShadow: 'none',
           '&:hover': {
-            boxShadow: '0px 2px 4px -1px rgba(0,0,0,0.2),0px 4px 5px 0px rgba(0,0,0,0.14),0px 1px 10px 0px rgba(0,0,0,0.12)',
+            boxShadow: '0px 1px 2px 0px rgba(60,64,67,0.3), 0px 1px 3px 1px rgba(60,64,67,0.15)',
+          },
+        },
+        outlined: {
+          borderColor: '#dadce0',
+          '&:hover': {
+            backgroundColor: 'rgba(26, 115, 232, 0.04)',
+            borderColor: '#dadce0',
+          },
+        },
+        text: {
+          '&:hover': {
+            backgroundColor: 'rgba(26, 115, 232, 0.04)',
           },
         },
       },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 4,
-          boxShadow: '0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12)',
-        },
+      defaultProps: {
+        disableElevation: true,
       },
     },
     MuiChip: {
       styleOverrides: {
         root: {
           borderRadius: 16,
+          height: 32,
+          fontSize: '14px',
+          fontWeight: 400,
+        },
+        outlined: {
+          borderColor: '#dadce0',
         },
       },
     },
@@ -214,7 +357,38 @@ export const theme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: 4,
+            '& fieldset': {
+              borderColor: '#dadce0',
+            },
+            '&:hover fieldset': {
+              borderColor: '#80868b',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#1a73e8',
+              borderWidth: 2,
+            },
           },
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 500,
+          fontSize: '14px',
+          minHeight: 48,
+          '&.Mui-selected': {
+            color: '#1a73e8',
+          },
+        },
+      },
+    },
+    MuiTabs: {
+      styleOverrides: {
+        indicator: {
+          backgroundColor: '#1a73e8',
+          height: 3,
         },
       },
     },
@@ -228,62 +402,99 @@ export const theme = createTheme({
         },
       },
     },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#ffffff',
+          color: '#202124',
+          boxShadow: 'none',
+          borderBottom: '1px solid #e8eaed',
+        },
+      },
+      defaultProps: {
+        elevation: 0,
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#ffffff',
+          borderRight: '1px solid #e8eaed',
+        },
+      },
+    },
+    MuiListItemButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: '0 24px 24px 0',
+          marginRight: 12,
+          '&.Mui-selected': {
+            backgroundColor: '#e8f0fe',
+            '&:hover': {
+              backgroundColor: '#e8f0fe',
+            },
+          },
+          '&:hover': {
+            backgroundColor: '#f1f3f4',
+          },
+        },
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+        },
+        standardInfo: {
+          backgroundColor: '#e8f0fe',
+          color: '#1967d2',
+        },
+        standardSuccess: {
+          backgroundColor: '#e6f4ea',
+          color: '#137333',
+        },
+        standardWarning: {
+          backgroundColor: '#fef7e0',
+          color: '#ea8600',
+        },
+        standardError: {
+          backgroundColor: '#fce8e6',
+          color: '#c5221f',
+        },
+      },
+    },
   },
 })
 
-// Material Design 2 Dark Theme
+// Material Design 2 Dark Theme with Google colors
 export const darkTheme = createTheme({
+  ...theme,
   palette: {
+    ...theme.palette,
     mode: 'dark',
     primary: {
-      main: '#90caf9',    // Material Blue 200
-      light: '#e3f2fd',
-      dark: '#42a5f5',
-      contrastText: '#000000',
-    },
-    secondary: {
-      main: '#f48fb1',    // Material Pink 200
-      light: '#fce4ec',
-      dark: '#e91e63',
-      contrastText: '#000000',
-    },
-    error: {
-      main: '#f44336',
-      light: '#e57373',
-      dark: '#d32f2f',
-      contrastText: '#ffffff',
-    },
-    warning: {
-      main: '#ff9800',
-      light: '#ffb74d',
-      dark: '#f57c00',
-      contrastText: '#000000',
-    },
-    success: {
-      main: '#4caf50',
-      light: '#81c784',
-      dark: '#388e3c',
+      main: '#8ab4f8',      // Light Google Blue for dark mode
+      light: '#aecbfa',
+      dark: '#669df6',
       contrastText: '#000000',
     },
     background: {
-      default: '#303030',
-      paper: '#424242',
+      default: '#202124',   // Google Dark Grey
+      paper: '#292a2d',
     },
     text: {
-      primary: '#ffffff',
-      secondary: 'rgba(255, 255, 255, 0.7)',
-      disabled: 'rgba(255, 255, 255, 0.5)',
+      primary: '#e8eaed',
+      secondary: '#9aa0a6',
+      disabled: '#5f6368',
     },
-    divider: 'rgba(255, 255, 255, 0.12)',
-    action: {
-      hover: 'rgba(255, 255, 255, 0.04)',
-      selected: 'rgba(255, 255, 255, 0.08)',
-      disabled: 'rgba(255, 255, 255, 0.26)',
-      disabledBackground: 'rgba(255, 255, 255, 0.12)',
+    divider: '#3c4043',
+    google: {
+      ...theme.palette.google!,
+      surface: '#292a2d',
+      border: '#3c4043',
+      borderLight: '#5f6368',
     },
   },
-  typography: theme.typography,
-  shape: theme.shape,
-  spacing: theme.spacing,
-  components: theme.components,
 })
+
+export default theme

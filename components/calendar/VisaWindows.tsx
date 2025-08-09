@@ -12,7 +12,8 @@ import {
   Tooltip,
   ToggleButton,
   ToggleButtonGroup,
-  Divider
+  Divider,
+  useTheme
 } from '@mui/material'
 import {
   Timeline as TimelineIcon,
@@ -25,7 +26,6 @@ import {
 } from '@mui/icons-material'
 import { format, subDays, differenceInDays, isWithinInterval, min, max } from 'date-fns'
 import { Country, Stay } from '@/lib/types'
-import { cardBoxStyle, cardHeaderStyle, cardTitleStyle } from '@/lib/styles/common'
 
 interface VisaWindow {
   countryCode: string
@@ -55,6 +55,7 @@ const visaRules = {
 }
 
 export default function VisaWindows({ countries, stays, selectedCountries }: VisaWindowsProps) {
+  const theme = useTheme()
   const [visaWindows, setVisaWindows] = useState<VisaWindow[]>([])
   const [viewMode, setViewMode] = useState<'timeline' | 'cards'>('cards')
   const [showWindows, setShowWindows] = useState<Record<string, boolean>>({})
@@ -203,9 +204,23 @@ export default function VisaWindows({ countries, stays, selectedCountries }: Vis
   }
 
   return (
-    <Box sx={cardBoxStyle}>
+    <Box sx={{
+      p: 0,
+      minHeight: 50,
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: 'white',
+      border: '1px solid',
+      borderColor: theme.palette.divider,
+      borderRadius: 2
+    }}>
       <Box sx={{ 
-        ...cardHeaderStyle,
+        mb: 3,
+        pb: 2,
+        px: 3,
+        pt: 3,
+        borderBottom: '1px solid',
+        borderBottomColor: theme.palette.divider,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between'
@@ -213,7 +228,13 @@ export default function VisaWindows({ countries, stays, selectedCountries }: Vis
         <Typography 
           variant="h6" 
           component="h2" 
-          sx={cardTitleStyle}
+          sx={{
+            color: theme.palette.text.primary,
+            fontFamily: 'Google Sans, Roboto, sans-serif',
+            fontWeight: 400,
+            fontSize: '1.125rem',
+            mb: 0.5
+          }}
         >
           Visa Windows
         </Typography>

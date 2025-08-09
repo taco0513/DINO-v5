@@ -13,7 +13,8 @@ import {
   CircularProgress,
   Fade,
   Collapse,
-  Autocomplete
+  Autocomplete,
+  useTheme
 } from '@mui/material'
 import { Country, Stay } from '@/lib/types'
 import { getStays, addStay, updateStay, deleteStay } from '@/lib/supabase/stays'
@@ -24,7 +25,6 @@ import {
   updateStayInStorage,
   deleteStayFromStorage 
 } from '@/lib/storage/stays-storage'
-import { cardBoxStyle, cardHeaderStyle, cardTitleStyle, cardSubtitleStyle } from '@/lib/styles/common'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
 import { getCurrentUserEmail } from '@/lib/context/user'
 
@@ -43,6 +43,7 @@ interface FormErrors {
 }
 
 export default function StayManagerEnhanced({ countries, selectedCountries, onStaysChange }: StayManagerProps) {
+  const theme = useTheme()
   const [stays, setStays] = useState<Stay[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -421,7 +422,16 @@ export default function StayManagerEnhanced({ countries, selectedCountries, onSt
 
   if (loading) {
     return (
-      <Box sx={cardBoxStyle}>
+      <Box sx={{
+        p: 0,
+        minHeight: 50,
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: 'white',
+        border: '1px solid',
+        borderColor: theme.palette.divider,
+        borderRadius: 2
+      }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
           <CircularProgress />
         </Box>
@@ -430,19 +440,44 @@ export default function StayManagerEnhanced({ countries, selectedCountries, onSt
   }
 
   return (
-    <Box sx={cardBoxStyle}>
+    <Box sx={{
+      p: 0,
+      minHeight: 50,
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: 'white',
+      border: '1px solid',
+      borderColor: theme.palette.divider,
+      borderRadius: 2
+    }}>
       {/* Header */}
-      <Box sx={cardHeaderStyle}>
+      <Box sx={{
+        mb: 3,
+        pb: 2,
+        px: 3,
+        pt: 3,
+        borderBottom: '1px solid',
+        borderBottomColor: theme.palette.divider
+      }}>
         <Typography 
           variant="h6" 
           component="h2" 
-          sx={cardTitleStyle}
+          sx={{
+            color: theme.palette.text.primary,
+            fontFamily: 'Google Sans, Roboto, sans-serif',
+            fontWeight: 400,
+            fontSize: '1.125rem',
+            mb: 0.5
+          }}
         >
           Entry/Exit Records
         </Typography>
         <Typography 
           variant="body2" 
-          sx={cardSubtitleStyle}
+          sx={{
+            color: theme.palette.text.secondary,
+            fontSize: '13px'
+          }}
         >
           Add new records or manage existing ones
         </Typography>

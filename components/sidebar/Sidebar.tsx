@@ -29,7 +29,8 @@ import {
   Person,
   Key,
   Menu as MenuIcon,
-  Add as AddIcon
+  Add as AddIcon,
+  Map as MapIcon
 } from '@mui/icons-material'
 import { Country, Stay } from '@/lib/types'
 import { addStayToStorage } from '@/lib/storage/stays-storage'
@@ -94,6 +95,7 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
   const menuItems = [
     { href: '/', label: 'Dashboard', icon: DashboardIcon },
     { href: '/calendar', label: 'Calendar', icon: EventIcon },
+    { href: '/guide', label: 'Travel Guide', icon: MapIcon },
   ]
 
   const handleAuthToggle = async () => {

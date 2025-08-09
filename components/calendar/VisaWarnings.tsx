@@ -15,7 +15,8 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemIcon
+  ListItemIcon,
+  useTheme
 } from '@mui/material'
 import {
   Warning as WarningIcon,
@@ -28,7 +29,6 @@ import {
 } from '@mui/icons-material'
 import { Country, Stay } from '@/lib/types'
 import { calculateAllVisaStatuses, type VisaStatus, type VisaCalculationContext } from '@/lib/visa-calculations/visa-engine'
-import { cardBoxStyle, cardHeaderStyle, cardTitleStyle, googleColors } from '@/lib/styles/common'
 // import { useSettings } from '@/lib/context/SettingsContext' // TODO: Create SettingsContext
 
 interface VisaWarningsProps {
@@ -37,6 +37,7 @@ interface VisaWarningsProps {
 }
 
 export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
+  const theme = useTheme()
   // Temporary fallback until SettingsContext is created
   const [settings] = useState({ nationality: 'US' })
   const [visaStatuses, setVisaStatuses] = useState<VisaStatus[]>([])
@@ -97,7 +98,16 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
 
   if (loading) {
     return (
-      <Box sx={cardBoxStyle}>
+      <Box sx={{
+        p: 0,
+        minHeight: 50,
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: 'white',
+        border: '1px solid',
+        borderColor: theme.palette.divider,
+        borderRadius: 2
+      }}>
         <Box sx={{ p: 3 }}>
           <Typography variant="h6" color="text.secondary">
             Calculating visa status...
@@ -110,7 +120,16 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
 
   if (visaStatuses.length === 0) {
     return (
-      <Box sx={cardBoxStyle}>
+      <Box sx={{
+        p: 0,
+        minHeight: 50,
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: 'white',
+        border: '1px solid',
+        borderColor: theme.palette.divider,
+        borderRadius: 2
+      }}>
         <Box sx={{ p: 3, textAlign: 'center' }}>
           <InfoIcon sx={{ fontSize: '3rem', color: 'text.disabled', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -125,10 +144,24 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
   }
 
   return (
-    <Box sx={cardBoxStyle}>
+    <Box sx={{
+      p: 0,
+      minHeight: 50,
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: 'white',
+      border: '1px solid',
+      borderColor: theme.palette.divider,
+      borderRadius: 2
+    }}>
       {/* Header */}
       <Box sx={{ 
-        ...cardHeaderStyle,
+        mb: 3,
+        pb: 2,
+        px: 3,
+        pt: 3,
+        borderBottom: '1px solid',
+        borderBottomColor: theme.palette.divider,
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between'
@@ -136,7 +169,13 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
         <Typography 
           variant="h6" 
           component="h2" 
-          sx={cardTitleStyle}
+          sx={{
+            color: theme.palette.text.primary,
+            fontFamily: 'Google Sans, Roboto, sans-serif',
+            fontWeight: 400,
+            fontSize: '1.125rem',
+            mb: 0.5
+          }}
         >
           Visa Status
         </Typography>
@@ -145,7 +184,7 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
           <Typography 
             variant="caption" 
             sx={{ 
-              color: '#70757a',
+              color: theme.palette.text.secondary,
               fontSize: '12px'
             }}
           >

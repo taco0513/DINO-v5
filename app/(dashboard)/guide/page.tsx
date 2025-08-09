@@ -1,0 +1,817 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Typography, Box, Tab, Tabs, Grid, Chip, List, ListItem, ListItemIcon, ListItemText, Checkbox, LinearProgress, Alert, Button, IconButton, Collapse, useTheme } from '@mui/material'
+import { FlightTakeoff as FlightIcon, Assignment as ChecklistIcon, Info as InfoIcon, ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon, Star as StarIcon, Update as UpdateIcon } from '@mui/icons-material'
+import { countries as allCountries } from '@/lib/data/countries-and-airports'
+import { getVisaRules } from '@/lib/visa-rules/nationality-rules'
+import CountrySelect from '@/components/ui/CountrySelect'
+import Sidebar from '@/components/sidebar/SidebarEnhanced'
+// Removed deprecated style imports
+import { visaService } from '@/lib/services/visa-service'
+import { VisaInformation, VisaData, VisaAlert } from '@/lib/types/visa'
+import { logger } from '@/lib/utils/logger'
+
+interface TabPanelProps {
+  children?: React.ReactNode
+  index: number
+  value: number
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`travel-guide-tabpanel-${index}`}
+      aria-labelledby={`travel-guide-tab-${index}`}
+      {...other}
+    >
+      {value === index && children}
+    </div>
+  )
+}
+
+// Checklist templates will remain hardcoded for now
+
+// Sample checklist templates
+const checklistTemplates = {
+  general: [
+    { category: 'Documents', items: [
+      { id: 'passport', text: 'Passport valid 6+ months', checked: false },
+      { id: 'visa', text: 'Visa (if required)', checked: false },
+      { id: 'tickets', text: 'Flight tickets (printed/mobile)', checked: false },
+      { id: 'accommodation', text: 'Hotel/accommodation confirmation', checked: false },
+      { id: 'insurance', text: 'Travel insurance documents', checked: false }
+    ]},
+    { category: 'Health', items: [
+      { id: 'vaccination', text: 'Required vaccinations', checked: false },
+      { id: 'medications', text: 'Personal medications', checked: false },
+      { id: 'prescription', text: 'Doctor prescriptions', checked: false },
+      { id: 'firstaid', text: 'Basic first aid kit', checked: false }
+    ]},
+    { category: 'Finance', items: [
+      { id: 'cards', text: 'Credit/debit cards', checked: false },
+      { id: 'cash', text: 'Local currency cash', checked: false },
+      { id: 'banknotify', text: 'Notify bank of travel', checked: false },
+      { id: 'backup', text: 'Backup payment method', checked: false }
+    ]},
+    { category: 'Tech', items: [
+      { id: 'phone', text: 'Phone with charger', checked: false },
+      { id: 'adapter', text: 'Power adapter', checked: false },
+      { id: 'simcard', text: 'International SIM/data plan', checked: false },
+      { id: 'powerbank', text: 'Power bank', checked: false }
+    ]}
+  ],
+  countrySpecific: {
+    'TH': [
+      { id: 'cash-requirement', text: 'Carry 20,000 THB cash (visa requirement)', checked: false },
+      { id: 'tm6-card', text: 'Keep TM6 departure card safe', checked: false },
+      { id: 'grab-app', text: 'Download Grab app for transport', checked: false }
+    ],
+    'JP': [
+      { id: 'jr-pass', text: 'Order JR Pass online (cheaper)', checked: false },
+      { id: 'cash-society', text: 'Prepare cash (many places cash-only)', checked: false },
+      { id: 'ic-card', text: 'Get IC card for public transport', checked: false }
+    ],
+    'KR': [
+      { id: 't-money', text: 'Get T-money card for transport', checked: false },
+      { id: 'k-eta', text: 'Apply for K-ETA online', checked: false },
+      { id: 'naver-map', text: 'Download Naver Map (better than Google)', checked: false }
+    ]
+  }
+}
+
+export default function TravelGuidePage() {
+  const theme = useTheme()
+  const [tabValue, setTabValue] = useState(0)
+  const [selectedCountry, setSelectedCountry] = useState('KR')
+  const [checklist, setChecklist] = useState(checklistTemplates.general)
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(['Documents'])
+  const [loading, setLoading] = useState(false)
+  const [touristVisaInfo, setTouristVisaInfo] = useState<VisaInformation | null>(null)
+  const [digitalNomadVisaInfo, setDigitalNomadVisaInfo] = useState<VisaInformation | null>(null)
+  const [visaAlerts, setVisaAlerts] = useState<VisaAlert[]>([])
+
+  // Get visa rules for selected country (legacy system - still used for basic rules)
+  const visaRules = getVisaRules('US', selectedCountry)
+  const countrySpecificChecklist = checklistTemplates.countrySpecific[selectedCountry as keyof typeof checklistTemplates.countrySpecific] || []
+
+  // Calculate checklist progress
+  const totalItems = checklist.reduce((acc, cat) => acc + cat.items.length, 0) + countrySpecificChecklist.length
+  const checkedItems = checklist.reduce((acc, cat) => acc + cat.items.filter(item => item.checked).length, 0) + 
+                       countrySpecificChecklist.filter(item => item.checked).length
+  const progress = totalItems > 0 ? (checkedItems / totalItems) * 100 : 0
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue)
+  }
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    )
+  }
+
+  const toggleChecklistItem = (categoryIndex: number, itemIndex: number) => {
+    const newChecklist = [...checklist]
+    newChecklist[categoryIndex].items[itemIndex].checked = 
+      !newChecklist[categoryIndex].items[itemIndex].checked
+    setChecklist(newChecklist)
+    
+    // Save to localStorage
+    localStorage.setItem(`checklist_${selectedCountry}`, JSON.stringify(newChecklist))
+  }
+
+  // Load visa information from database
+  useEffect(() => {
+    loadVisaInformation()
+  }, [selectedCountry])
+
+  // Load saved checklist from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(`checklist_${selectedCountry}`)
+    if (saved) {
+      setChecklist(JSON.parse(saved))
+    } else {
+      setChecklist(checklistTemplates.general)
+    }
+  }, [selectedCountry])
+
+  const loadVisaInformation = async () => {
+    setLoading(true)
+    try {
+      // Load tourist visa info
+      const touristResponse = await visaService.getVisaInfo(selectedCountry, 'tourist')
+      if (touristResponse.data) {
+        setTouristVisaInfo(touristResponse.data)
+      } else {
+        setTouristVisaInfo(null)
+      }
+
+      // Load digital nomad visa info
+      const digitalNomadResponse = await visaService.getVisaInfo(selectedCountry, 'digital_nomad')
+      if (digitalNomadResponse.data) {
+        setDigitalNomadVisaInfo(digitalNomadResponse.data)
+      } else {
+        setDigitalNomadVisaInfo(null)
+      }
+
+      // Load alerts
+      const alertsResponse = await visaService.getVisaInfo(selectedCountry, 'alerts')
+      if (alertsResponse.data && alertsResponse.data.data.alerts) {
+        setVisaAlerts(alertsResponse.data.data.alerts)
+      } else {
+        setVisaAlerts([])
+      }
+
+      logger.info(`Loaded visa information for ${selectedCountry}`)
+    } catch (error) {
+      logger.error('Error loading visa information:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
+      <Sidebar 
+        countries={allCountries}
+        selectedCountry={selectedCountry}
+        onSelectCountry={setSelectedCountry}
+        currentPage="guide"
+        onAddStay={() => {}}
+      />
+      
+      <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
+        <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+          <Box sx={{ p: 3 }}>
+            {/* Header - Material Design Style */}
+            <Box sx={{ mb: 4 }}>
+              <Typography 
+                sx={{
+                  fontSize: '2rem',
+                  fontWeight: 600,
+                  color: theme.palette.text.primary,
+                  mb: 2
+                }}
+              >
+                Travel Guide
+              </Typography>
+              <Typography 
+                sx={{
+                  fontSize: '1rem',
+                  color: theme.palette.text.secondary
+                }}
+              >
+                Visa information and travel checklists for digital nomads
+              </Typography>
+            </Box>
+
+            {/* Country Selector */}
+            <Box sx={{ mb: 3, maxWidth: 400 }}>
+              <CountrySelect
+                id="guide-country"
+                value={selectedCountry}
+                onChange={setSelectedCountry}
+                countries={allCountries}
+                label="Select Country"
+                placeholder="Type to search..."
+              />
+            </Box>
+
+            {/* Tabs - Material Design Style */}
+            <Box sx={{ 
+              backgroundColor: theme.palette.background.paper,
+              borderRadius: 2,
+              boxShadow: theme.shadows[1]
+            }}>
+        <Tabs 
+          value={tabValue} 
+          onChange={handleTabChange}
+          sx={{ 
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            px: theme.spacing(2),
+            '& .MuiTab-root': {
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              color: theme.palette.text.secondary,
+              minHeight: 48,
+              transition: theme.transitions.create(['color', 'background-color']),
+              borderRadius: '4px 4px 0 0',
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
+              '&.Mui-selected': {
+                color: theme.palette.primary.main
+              }
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: theme.palette.primary.main,
+              height: 3
+            }
+          }}
+        >
+          <Tab icon={<InfoIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Visa Information" />
+          <Tab icon={<ChecklistIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Travel Checklist" />
+        </Tabs>
+
+        {/* Visa Information Tab */}
+        <TabPanel value={tabValue} index={0}>
+          <Box sx={{ p: theme.spacing(3) }}>
+            {/* Alerts Section */}
+            {visaAlerts.length > 0 && (
+              <Box sx={{ mb: theme.spacing(3) }}>
+                {visaAlerts.map((alert, index) => (
+                  <Alert 
+                    key={index}
+                    severity={alert.type === 'warning' ? 'warning' : 'info'}
+                    sx={{ 
+                      mb: theme.spacing(1),
+                      borderRadius: 1,
+                      boxShadow: theme.shadows[1]
+                    }}
+                  >
+                    {alert.message}
+                  </Alert>
+                ))}
+              </Box>
+            )}
+
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: theme.spacing(4) }}>
+                <Typography sx={{ fontSize: '1rem', color: theme.palette.text.secondary }}>
+                  Loading visa information...
+                </Typography>
+              </Box>
+            ) : (
+              <Grid container spacing={3}>
+              {/* Tourist Visa Card */}
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box sx={{
+                  backgroundColor: theme.palette.background.paper,
+                  borderRadius: 2,
+                  boxShadow: theme.shadows[2],
+                  transition: theme.transitions.create(['box-shadow', 'transform']),
+                  '&:hover': {
+                    boxShadow: theme.shadows[3],
+                    transform: 'translateY(-2px)'
+                  }
+                }}>
+                  <Box sx={{ p: theme.spacing(3), pb: theme.spacing(2), borderBottom: `1px solid ${theme.palette.divider}` }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography sx={{ fontSize: '1.5rem', fontWeight: 400 }}>
+                        Tourist Visa
+                      </Typography>
+                      <Chip 
+                        label={touristVisaInfo?.data.visaRequired === false ? 'Visa Free' : 'Visa Required'} 
+                        size="small"
+                        sx={{
+                          backgroundColor: touristVisaInfo?.data.visaRequired === false ? theme.palette.success.main : theme.palette.warning.main,
+                          color: '#ffffff',
+                          height: 28,
+                          fontWeight: 500
+                        }}
+                      />
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ p: theme.spacing(3) }}>
+                    {touristVisaInfo ? (
+                      <>
+                        {touristVisaInfo.data.duration && (
+                          <Box sx={{ mb: 3 }}>
+                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: theme.palette.text.secondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                              Duration
+                            </Typography>
+                            <Typography 
+                              variant="h4" 
+                              sx={{ 
+                                fontSize: '2rem',
+                                color: theme.palette.primary.main,
+                                fontWeight: 500
+                              }}
+                            >
+                              {touristVisaInfo.data.duration} days
+                            </Typography>
+                            <Typography sx={{ fontSize: '0.875rem', color: theme.palette.text.secondary }}>
+                              {touristVisaInfo.data.resetType === 'rolling' 
+                                ? `Rolling ${touristVisaInfo.data.periodDays}-day window` 
+                                : touristVisaInfo.data.resetType === 'exit' 
+                                  ? 'Per entry' 
+                                  : 'Calendar year'}
+                            </Typography>
+                            {touristVisaInfo.data.extension?.available && (
+                              <Typography sx={{ fontSize: '0.75rem', color: theme.palette.text.secondary, mt: 1 }}>
+                                Extension available: +{touristVisaInfo.data.extension.duration} days
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+
+                        {touristVisaInfo.data.requirements && Array.isArray(touristVisaInfo.data.requirements) && (
+                          <>
+                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: theme.palette.text.secondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                              Requirements
+                            </Typography>
+                            <List dense sx={{ p: 0 }}>
+                              {touristVisaInfo.data.requirements.map((req, index) => (
+                                <ListItem key={index} sx={{ px: 0, py: 0.5 }}>
+                                  <ListItemText 
+                                    primary={`• ${req}`}
+                                    primaryTypographyProps={{ 
+                                      sx: { 
+                                        fontSize: '0.875rem',
+                                        color: theme.palette.text.primary
+                                      }
+                                    }}
+                                  />
+                                </ListItem>
+                              ))}
+                            </List>
+                          </>
+                        )}
+
+                        {touristVisaInfo.data.fees && touristVisaInfo.data.fees.amount > 0 && (
+                          <Box sx={{ mt: 2 }}>
+                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: theme.palette.text.secondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                              Fees
+                            </Typography>
+                            <Typography sx={{ fontSize: '0.875rem', color: theme.palette.text.primary }}>
+                              {touristVisaInfo.data.fees.currency} {touristVisaInfo.data.fees.amount}
+                            </Typography>
+                          </Box>
+                        )}
+
+                        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <UpdateIcon sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
+                          <Typography sx={{ fontSize: '0.75rem', color: theme.palette.text.secondary }}>
+                            Last updated: {new Date(touristVisaInfo.lastUpdated).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      </>
+                    ) : (
+                      <Alert 
+                        severity="info" 
+                        sx={{ 
+                          backgroundColor: theme.palette.action.hover,
+                          '& .MuiAlert-message': {
+                            color: theme.palette.text.primary
+                          },
+                          '& .MuiAlert-icon': {
+                            color: theme.palette.primary.main
+                          }
+                        }}
+                      >
+                        No tourist visa information available for this country yet
+                      </Alert>
+                    )}
+                  </Box>
+                </Box>
+              </Grid>
+
+              {/* Digital Nomad Visa Card */}
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box sx={{
+                  backgroundColor: theme.palette.background.paper,
+                  borderRadius: 2,
+                  boxShadow: theme.shadows[2],
+                  transition: theme.transitions.create(['box-shadow', 'transform']),
+                  '&:hover': {
+                    boxShadow: theme.shadows[3],
+                    transform: 'translateY(-2px)'
+                  }
+                }}>
+                  <Box sx={{ p: theme.spacing(3), pb: theme.spacing(2), borderBottom: `1px solid ${theme.palette.divider}` }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography sx={{ fontSize: '1.5rem', fontWeight: 400 }}>
+                        Digital Nomad Visa
+                      </Typography>
+                      {digitalNomadVisaInfo?.data.available && (
+                        <Chip 
+                          icon={<StarIcon sx={{ fontSize: 16 }} />}
+                          label="Available" 
+                          size="small"
+                          sx={{
+                            backgroundColor: theme.palette.primary.light,
+                            color: theme.palette.primary.dark,
+                            height: 28,
+                            fontWeight: 500
+                          }}
+                        />
+                      )}
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ p: theme.spacing(3) }}>
+                    {digitalNomadVisaInfo ? (
+                      digitalNomadVisaInfo.data.available ? (
+                        <>
+                          <Typography sx={{ 
+                            fontSize: '1.125rem',
+                            fontWeight: 500,
+                            color: theme.palette.primary.main,
+                            mb: 2
+                          }}>
+                            {digitalNomadVisaInfo.data.officialName || 'Digital Nomad Visa'}
+                          </Typography>
+
+                          <Box sx={{ mb: 3 }}>
+                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: theme.palette.text.secondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                              Duration
+                            </Typography>
+                            <Typography 
+                              variant="h5" 
+                              sx={{ 
+                                fontSize: '1.75rem',
+                                color: theme.palette.text.primary,
+                                fontWeight: 500
+                              }}
+                            >
+                              {digitalNomadVisaInfo.data.duration && digitalNomadVisaInfo.data.duration >= 365 
+                                ? `${digitalNomadVisaInfo.data.duration / 365} year${digitalNomadVisaInfo.data.duration / 365 > 1 ? 's' : ''}`
+                                : `${digitalNomadVisaInfo.data.duration} days`}
+                            </Typography>
+                            {digitalNomadVisaInfo.data.renewable && (
+                              <Typography sx={{ fontSize: '0.75rem', color: theme.palette.text.secondary, mt: 1 }}>
+                                Renewable visa
+                              </Typography>
+                            )}
+                          </Box>
+
+                          {digitalNomadVisaInfo.data.processingTime && digitalNomadVisaInfo.data.fees && (
+                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                              <Grid size={{ xs: 6 }}>
+                                <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: theme.palette.text.secondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                                  Processing Time
+                                </Typography>
+                                <Typography sx={{ fontSize: '0.875rem', color: theme.palette.text.primary }}>
+                                  {digitalNomadVisaInfo.data.processingTime.min}-{digitalNomadVisaInfo.data.processingTime.max} days
+                                </Typography>
+                              </Grid>
+                              <Grid size={{ xs: 6 }}>
+                                <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: theme.palette.text.secondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                                  Cost
+                                </Typography>
+                                <Typography sx={{ fontSize: '0.875rem', color: theme.palette.text.primary }}>
+                                  {digitalNomadVisaInfo.data.fees.currency} {digitalNomadVisaInfo.data.fees.amount}
+                                </Typography>
+                              </Grid>
+                            </Grid>
+                          )}
+
+                          {digitalNomadVisaInfo.data.requirements && typeof digitalNomadVisaInfo.data.requirements === 'object' && 'income' in digitalNomadVisaInfo.data.requirements && (
+                            <Box sx={{ mb: 2 }}>
+                              <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: theme.palette.text.secondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                                Income Requirement
+                              </Typography>
+                              <Typography sx={{ fontSize: '0.875rem', color: theme.palette.text.primary }}>
+                                {(digitalNomadVisaInfo.data.requirements as any).income.currency} {(digitalNomadVisaInfo.data.requirements as any).income.min.toLocaleString()} / {(digitalNomadVisaInfo.data.requirements as any).income.period}
+                              </Typography>
+                            </Box>
+                          )}
+
+                          {digitalNomadVisaInfo.data.benefits && digitalNomadVisaInfo.data.benefits.length > 0 && (
+                            <>
+                              <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: theme.palette.text.secondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                                Benefits
+                              </Typography>
+                              <List dense sx={{ p: 0 }}>
+                                {digitalNomadVisaInfo.data.benefits.map((benefit, index) => (
+                                  <ListItem key={index} sx={{ px: 0, py: 0.5 }}>
+                                    <ListItemText 
+                                      primary={`• ${benefit}`}
+                                      primaryTypographyProps={{ 
+                                        sx: { 
+                                          fontSize: '0.875rem',
+                                          color: theme.palette.text.primary
+                                        }
+                                      }}
+                                    />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </>
+                          )}
+
+                          {digitalNomadVisaInfo.data.restrictions && digitalNomadVisaInfo.data.restrictions.length > 0 && (
+                            <>
+                              <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: theme.palette.text.secondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1, mt: 2 }}>
+                                Restrictions
+                              </Typography>
+                              <List dense sx={{ p: 0 }}>
+                                {digitalNomadVisaInfo.data.restrictions.map((restriction, index) => (
+                                  <ListItem key={index} sx={{ px: 0, py: 0.5 }}>
+                                    <ListItemText 
+                                      primary={`• ${restriction}`}
+                                      primaryTypographyProps={{ 
+                                        sx: { 
+                                          fontSize: '0.875rem',
+                                          color: theme.palette.text.secondary
+                                        }
+                                      }}
+                                    />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <Alert 
+                          severity="info" 
+                          sx={{ 
+                            backgroundColor: theme.palette.primary.light,
+                            color: theme.palette.text.primary,
+                            '& .MuiAlert-icon': {
+                              color: theme.palette.primary.main
+                            }
+                          }}
+                        >
+                          Digital nomad visa not currently available for this country
+                        </Alert>
+                      )
+                    ) : (
+                      <Alert 
+                        severity="info"
+                        sx={{ 
+                          backgroundColor: theme.palette.action.hover,
+                          '& .MuiAlert-message': {
+                            color: theme.palette.text.primary
+                          },
+                          '& .MuiAlert-icon': {
+                            color: theme.palette.primary.main
+                          }
+                        }}
+                      >
+                        No information available yet
+                      </Alert>
+                    )}
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+            )}
+          </Box>
+        </TabPanel>
+
+        {/* Travel Checklist Tab */}
+        <TabPanel value={tabValue} index={1}>
+          <Box sx={{ p: theme.spacing(3) }}>
+            {/* Progress Bar */}
+            <Box sx={{ mb: theme.spacing(3) }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: theme.spacing(1) }}>
+                <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: theme.palette.text.secondary }}>
+                  Checklist Progress
+                </Typography>
+                <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: theme.palette.text.secondary }}>
+                  {checkedItems}/{totalItems} completed
+                </Typography>
+              </Box>
+              <LinearProgress 
+                variant="determinate" 
+                value={progress} 
+                sx={{ 
+                  height: 8, 
+                  borderRadius: 1,
+                  backgroundColor: theme.palette.action.hover,
+                  '& .MuiLinearProgress-bar': {
+                    backgroundColor: progress === 100 ? theme.palette.success.main : theme.palette.primary.main,
+                    borderRadius: 1
+                  }
+                }}
+              />
+            </Box>
+
+            {/* General Checklist */}
+            {checklist.map((category, categoryIndex) => (
+              <Box key={category.category} sx={{ 
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: 2,
+                boxShadow: theme.shadows[1],
+                mb: theme.spacing(2),
+                transition: theme.transitions.create(['box-shadow']),
+                '&:hover': {
+                  boxShadow: theme.shadows[2]
+                }
+              }}>
+                <Box
+                  sx={{
+                    p: theme.spacing(2),
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    borderBottom: expandedCategories.includes(category.category) ? `1px solid ${theme.palette.divider}` : 'none',
+                    transition: theme.transitions.create('background-color'),
+                    '&:hover': { backgroundColor: theme.palette.action.hover }
+                  }}
+                  onClick={() => toggleCategory(category.category)}
+                >
+                  <Typography sx={{ 
+                    fontSize: '1.125rem',
+                    fontWeight: 500,
+                    color: theme.palette.text.primary
+                  }}>
+                    {category.category}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Chip 
+                      label={`${category.items.filter(i => i.checked).length}/${category.items.length}`}
+                      size="small"
+                      sx={{
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                        height: 24,
+                        backgroundColor: category.items.every(i => i.checked) ? theme.palette.success.main : theme.palette.action.hover,
+                        color: category.items.every(i => i.checked) ? '#ffffff' : theme.palette.text.secondary,
+                        transition: theme.transitions.create(['background-color', 'color'])
+                      }}
+                    />
+                    <IconButton size="small">
+                      {expandedCategories.includes(category.category) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    </IconButton>
+                  </Box>
+                </Box>
+                <Collapse in={expandedCategories.includes(category.category)}>
+                  <List dense sx={{ px: 2, pb: 1 }}>
+                    {category.items.map((item, itemIndex) => (
+                      <ListItem key={item.id} disablePadding sx={{ py: 0.25 }}>
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <Checkbox
+                            edge="start"
+                            checked={item.checked}
+                            onChange={() => toggleChecklistItem(categoryIndex, itemIndex)}
+                            size="small"
+                            sx={{
+                              color: theme.palette.text.secondary,
+                              '&.Mui-checked': {
+                                color: theme.palette.primary.main
+                              }
+                            }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={item.text}
+                          primaryTypographyProps={{ 
+                            sx: { 
+                              fontSize: '14px',
+                              textDecoration: item.checked ? 'line-through' : 'none',
+                              color: item.checked ? theme.palette.text.secondary : theme.palette.text.primary
+                            }
+                          }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Collapse>
+              </Box>
+            ))}
+
+            {/* Country-Specific Checklist */}
+            {countrySpecificChecklist.length > 0 && (
+              <Box sx={{ 
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: 2,
+                boxShadow: theme.shadows[1],
+                mb: theme.spacing(2),
+                border: `2px solid ${theme.palette.primary.main}`
+              }}>
+                <Box sx={{ 
+                  p: theme.spacing(2), 
+                  backgroundColor: theme.palette.action.hover,
+                  borderBottom: `1px solid ${theme.palette.primary.main}`
+                }}>
+                  <Typography sx={{ 
+                    fontSize: '1.125rem',
+                    fontWeight: 500,
+                    color: theme.palette.primary.main
+                  }}>
+                    {allCountries.find(c => c.code === selectedCountry)?.flag} {allCountries.find(c => c.code === selectedCountry)?.name} Specific
+                  </Typography>
+                </Box>
+                <List dense sx={{ px: 2, py: 1 }}>
+                  {countrySpecificChecklist.map((item) => (
+                    <ListItem key={item.id} disablePadding sx={{ py: 0.25 }}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <Checkbox
+                          edge="start"
+                          checked={item.checked}
+                          onChange={() => {
+                            item.checked = !item.checked
+                            setChecklist([...checklist])
+                          }}
+                          size="small"
+                          sx={{
+                            color: theme.palette.text.secondary,
+                            '&.Mui-checked': {
+                              color: theme.palette.primary.main
+                            }
+                          }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary={item.text}
+                        primaryTypographyProps={{ 
+                          sx: { 
+                            fontSize: '0.875rem',
+                            textDecoration: item.checked ? 'line-through' : 'none',
+                            color: item.checked ? theme.palette.text.secondary : theme.palette.text.primary
+                          }
+                        }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+            )}
+
+            {/* Action Buttons */}
+            <Box sx={{ display: 'flex', gap: theme.spacing(2), mt: theme.spacing(3) }}>
+              <Button 
+                variant="text"
+                onClick={() => {
+                  const newChecklist = checklist.map(cat => ({
+                    ...cat,
+                    items: cat.items.map(item => ({ ...item, checked: false }))
+                  }))
+                  setChecklist(newChecklist)
+                  localStorage.setItem(`checklist_${selectedCountry}`, JSON.stringify(newChecklist))
+                }}
+                sx={{ textTransform: 'none', fontWeight: 500 }}
+              >
+                Reset Checklist
+              </Button>
+              <Button 
+                variant="contained"
+                onClick={() => {
+                  let text = `Travel Checklist - ${allCountries.find(c => c.code === selectedCountry)?.name}\n\n`
+                  checklist.forEach(cat => {
+                    text += `${cat.category}:\n`
+                    cat.items.forEach(item => {
+                      text += `${item.checked ? '✓' : '☐'} ${item.text}\n`
+                    })
+                    text += '\n'
+                  })
+                  
+                  navigator.clipboard.writeText(text)
+                  alert('Checklist copied to clipboard!')
+                }}
+                sx={{ textTransform: 'none', fontWeight: 500 }}
+              >
+                Export Checklist
+              </Button>
+            </Box>
+          </Box>
+        </TabPanel>
+      </Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  )
+}

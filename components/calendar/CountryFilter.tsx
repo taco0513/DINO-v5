@@ -15,7 +15,8 @@ import {
   OutlinedInput,
   Chip,
   IconButton,
-  Stack
+  Stack,
+  useTheme
 } from '@mui/material'
 import {
   Done as DoneIcon,
@@ -23,7 +24,6 @@ import {
   FilterList as FilterListIcon
 } from '@mui/icons-material'
 import { Country, Stay } from '@/lib/types'
-import { cardBoxStyle, cardHeaderStyle, cardTitleStyle, cardSubtitleStyle, googleColors } from '@/lib/styles/common'
 
 interface CountryFilterProps {
   countries: Country[]
@@ -33,6 +33,7 @@ interface CountryFilterProps {
 }
 
 export default function CountryFilter({ countries, stays, selectedCountries, onSelectionChange }: CountryFilterProps) {
+  const theme = useTheme()
   // Don't show the filter if there are no stays
   if (stays.length === 0) {
     return null
@@ -70,10 +71,24 @@ export default function CountryFilter({ countries, stays, selectedCountries, onS
   const isAllSelected = selectedCountries.length === availableCountries.length
 
   return (
-    <Box sx={cardBoxStyle}>
+    <Box sx={{
+      p: 0,
+      minHeight: 50,
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: 'white',
+      border: '1px solid',
+      borderColor: theme.palette.divider,
+      borderRadius: 2
+    }}>
       {/* Header */}
       <Box sx={{ 
-        ...cardHeaderStyle,
+        mb: 3,
+        pb: 2,
+        px: 3,
+        pt: 3,
+        borderBottom: '1px solid',
+        borderBottomColor: theme.palette.divider,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'flex-start'
@@ -82,13 +97,22 @@ export default function CountryFilter({ countries, stays, selectedCountries, onS
           <Typography 
             variant="h6" 
             component="h2" 
-            sx={cardTitleStyle}
+            sx={{
+              color: theme.palette.text.primary,
+              fontFamily: 'Google Sans, Roboto, sans-serif',
+              fontWeight: 400,
+              fontSize: '1.125rem',
+              mb: 0.5
+            }}
           >
             Country Filter
           </Typography>
           <Typography 
             variant="body2" 
-            sx={cardSubtitleStyle}
+            sx={{
+              color: theme.palette.text.secondary,
+              fontSize: '13px'
+            }}
           >
             {selectedCountries.length === 0 
               ? 'Showing all countries' 
@@ -96,7 +120,7 @@ export default function CountryFilter({ countries, stays, selectedCountries, onS
             }
           </Typography>
         </Box>
-        <FilterListIcon sx={{ color: googleColors.textSecondary, fontSize: 20 }} />
+        <FilterListIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
       </Box>
 
       {/* Country Chips */}
@@ -121,16 +145,16 @@ export default function CountryFilter({ countries, stays, selectedCountries, onS
                 onDelete={isSelected ? () => handleToggleCountry(country.code) : undefined}
                 deleteIcon={isSelected ? <DoneIcon /> : undefined}
                 sx={{
-                  backgroundColor: isSelected ? googleColors.primaryLight : 'transparent',
-                  border: `1px solid ${isSelected ? googleColors.primary : googleColors.borderLight}`,
-                  color: isSelected ? googleColors.primary : googleColors.textPrimary,
+                  backgroundColor: isSelected ? theme.palette.primary.light : 'transparent',
+                  border: `1px solid ${isSelected ? theme.palette.primary.main : theme.palette.divider}`,
+                  color: isSelected ? theme.palette.primary.main : theme.palette.text.primary,
                   '& .MuiChip-deleteIcon': {
-                    color: googleColors.primary,
+                    color: theme.palette.primary.main,
                     fontSize: '18px'
                   },
                   '&:hover': {
-                    backgroundColor: isSelected ? googleColors.primaryLight : googleColors.hoverLight,
-                    borderColor: isSelected ? googleColors.primary : googleColors.borderLight
+                    backgroundColor: isSelected ? theme.palette.primary.light : theme.palette.action.hover,
+                    borderColor: isSelected ? theme.palette.primary.main : theme.palette.divider
                   },
                   transition: 'all 0.2s ease',
                   fontWeight: isSelected ? 500 : 400
@@ -146,7 +170,7 @@ export default function CountryFilter({ countries, stays, selectedCountries, onS
           justifyContent: 'center', 
           gap: 2,
           pt: 2,
-          borderTop: `1px solid ${googleColors.borderLighter}`
+          borderTop: `1px solid ${theme.palette.divider}`
         }}>
           <Chip
             label={isAllSelected ? "Clear All" : "Select All"}
@@ -155,13 +179,13 @@ export default function CountryFilter({ countries, stays, selectedCountries, onS
             variant="outlined"
             size="small"
             sx={{
-              borderColor: googleColors.primary,
-              color: googleColors.primary,
+              borderColor: theme.palette.primary.main,
+              color: theme.palette.primary.main,
               '&:hover': {
-                backgroundColor: googleColors.primaryLight
+                backgroundColor: theme.palette.primary.light
               },
               '& .MuiChip-icon': {
-                color: googleColors.primary
+                color: theme.palette.primary.main
               }
             }}
           />

@@ -19,7 +19,8 @@ import {
   Stack,
   Skeleton,
   Alert,
-  AlertTitle
+  AlertTitle,
+  useTheme
 } from '@mui/material'
 import {
   Edit as EditIcon,
@@ -31,7 +32,6 @@ import {
 import { Country, Stay, isOngoingStay, calculateStayDuration } from '@/lib/types'
 import { getStays, updateStay, deleteStay } from '@/lib/supabase/stays'
 import { loadStaysFromStorage, deleteStayFromStorage } from '@/lib/storage/stays-storage'
-import { cardBoxStyle, cardHeaderStyle, cardTitleStyle, googleColors } from '@/lib/styles/common'
 import { 
   detectDateConflicts, 
   autoResolveConflicts, 
@@ -47,6 +47,7 @@ interface StaysListProps {
 }
 
 export default function StaysList({ countries, onStaysChange, onEditStay }: StaysListProps) {
+  const theme = useTheme()
   const [stays, setStays] = useState<Stay[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCountry, setSelectedCountry] = useState<string>('ALL')
@@ -256,10 +257,24 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
   }
 
   return (
-    <Box sx={cardBoxStyle}>
+    <Box sx={{
+      p: 0,
+      minHeight: 50,
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: 'white',
+      border: '1px solid',
+      borderColor: theme.palette.divider,
+      borderRadius: 2
+    }}>
       {/* Ultra Minimal Header with Filter */}
       <Box sx={{ 
-        ...cardHeaderStyle,
+        mb: 3,
+        pb: 2,
+        px: 3,
+        pt: 3,
+        borderBottom: '1px solid',
+        borderBottomColor: theme.palette.divider,
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between'
@@ -267,7 +282,13 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
         <Typography 
           variant="h6" 
           component="h2" 
-          sx={cardTitleStyle}
+          sx={{
+            color: theme.palette.text.primary,
+            fontFamily: 'Google Sans, Roboto, sans-serif',
+            fontWeight: 400,
+            fontSize: '1.125rem',
+            mb: 0.5
+          }}
         >
           Recent Activity
         </Typography>
@@ -292,7 +313,7 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
           <Typography 
             variant="caption" 
             sx={{ 
-              color: '#70757a',
+              color: theme.palette.text.secondary,
               fontSize: '12px'
             }}
           >

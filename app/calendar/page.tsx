@@ -95,7 +95,7 @@ export default function CalendarPage() {
   )
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'white' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
       <Sidebar 
         countries={countries}
         selectedCountry=""
@@ -104,29 +104,28 @@ export default function CalendarPage() {
         onAddStay={loadAllStays} // 새 여행 기록 추가 시 목록 새로고침
       />
       
-      <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#f8f9fa' }}>
-        {/* Material Design 3 Style Header */}
+      <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
+        {/* Material Design 2 Style Header */}
         <AppBar 
           position="sticky" 
           elevation={0}
           sx={{ 
-            backgroundColor: 'white',
-            borderBottom: '1px solid #e8eaed',
+            backgroundColor: theme.palette.background.paper,
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            color: theme.palette.text.primary,
             top: 0,
             zIndex: 100
           }}
         >
           <Toolbar sx={{ px: { xs: 2, md: 3 } }}>
-            <CalendarIcon sx={{ color: '#1a73e8', mr: 2 }} />
+            <CalendarIcon sx={{ color: theme.palette.primary.main, mr: 2 }} />
             <Typography 
               variant="h6" 
               component="h1" 
               sx={{ 
                 flexGrow: 1,
-                color: '#202124',
-                fontFamily: 'Google Sans, Roboto, sans-serif',
-                fontWeight: 500,
-                fontSize: '1.125rem'
+                color: theme.palette.text.primary,
+                fontWeight: 500
               }}
             >
               Travel Calendar
@@ -135,14 +134,14 @@ export default function CalendarPage() {
             {/* Action Bar */}
             <Stack direction="row" spacing={1} alignItems="center">
               <IconButton 
-                sx={{ color: '#5f6368' }}
+                sx={{ color: theme.palette.text.secondary }}
                 size="small"
               >
                 <SearchIcon fontSize="small" />
               </IconButton>
               
               <IconButton 
-                sx={{ color: '#5f6368' }}
+                sx={{ color: theme.palette.text.secondary }}
                 size="small"
               >
                 <NotificationsIcon fontSize="small" />
@@ -163,13 +162,13 @@ export default function CalendarPage() {
                   fontWeight: 500,
                   fontSize: '14px',
                   minHeight: 48,
-                  color: '#5f6368',
+                  color: theme.palette.text.secondary,
                   '&.Mui-selected': {
-                    color: '#1a73e8'
+                    color: theme.palette.primary.main
                   }
                 },
                 '& .MuiTabs-indicator': {
-                  backgroundColor: '#1a73e8',
+                  backgroundColor: theme.palette.primary.main,
                   height: 3,
                   borderRadius: '3px 3px 0 0'
                 }
@@ -183,7 +182,7 @@ export default function CalendarPage() {
 
         {/* Main Content Area with Tab Panels */}
         <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-          <Container maxWidth="xl" sx={{ py: 3 }}>
+          <Container maxWidth="xl" sx={{ py: theme.spacing(3) }}>
             
             {/* Tab Panel: Calendar View */}
             {activeTab === 0 && (
