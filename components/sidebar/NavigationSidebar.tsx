@@ -96,6 +96,12 @@ export default function NavigationSidebar() {
       icon: <FeedbackIcon />, 
       path: '/test-feedback',
       visible: isAdminUser
+    },
+    { 
+      text: 'Debug Stays', 
+      icon: <FeedbackIcon />, 
+      path: '/debug-stays',
+      visible: isAdminUser
     }
   ]
 
