@@ -18,12 +18,19 @@ import {
   Notifications as NotificationsIcon,
   Dashboard as DashboardIcon
 } from '@mui/icons-material'
-import CountryFilter from '@/components/calendar/CountryFilter'
-import VisaWarnings from '@/components/calendar/VisaWarnings'
-import StaysList from '@/components/stays/StaysList'
+import dynamic from 'next/dynamic'
 import UserMenu from '@/components/auth/UserMenu'
-import ModularDashboard from '@/components/dashboard/ModularDashboard'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
+
+// Dynamic imports for better performance
+const ModularDashboard = dynamic(() => import('@/components/dashboard/ModularDashboard'), {
+  loading: () => <LoadingSkeleton variant="dashboard" />,
+  ssr: false
+})
+const StaysList = dynamic(() => import('@/components/stays/StaysList'), {
+  loading: () => <LoadingSkeleton variant="list" />,
+  ssr: false
+})
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import { Country, Stay } from '@/lib/types'
 import { getStays } from '@/lib/supabase/stays'

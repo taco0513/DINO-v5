@@ -30,21 +30,30 @@ import {
 } from '@mui/icons-material'
 import UserMenu from '@/components/auth/UserMenu'
 import dynamic from 'next/dynamic'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 
-// Removed Material Web Components - using pure MUI
-import RollingCalendar from '@/components/calendar/RollingCalendar'
-import StayManagerEnhanced from '@/components/stays/StayManagerEnhanced'
-import StaysList from '@/components/stays/StaysList'
+// Dynamic imports for better performance
+const RollingCalendar = dynamic(() => import('@/components/calendar/RollingCalendar'), {
+  loading: () => <LoadingSkeleton variant="list" />,
+  ssr: false
+})
+const StayManagerEnhanced = dynamic(() => import('@/components/stays/StayManagerEnhanced'), {
+  loading: () => <LoadingSkeleton variant="card" />,
+  ssr: false
+})
+const StaysList = dynamic(() => import('@/components/stays/StaysList'), {
+  loading: () => <LoadingSkeleton variant="list" />,
+  ssr: false
+})
 import { Country, Stay } from '@/lib/types'
 import { getStays } from '@/lib/supabase/stays'
 import { loadStaysFromStorage, saveStaysToStorage } from '@/lib/storage/stays-storage'
-import CountryFilter from '@/components/calendar/CountryFilter'
-import VisaWarnings from '@/components/calendar/VisaWarnings'
-import VisaWindows from '@/components/calendar/VisaWindows'
-import CalendarCountryFilter from '@/components/calendar/CalendarCountryFilter'
+const CountryFilter = dynamic(() => import('@/components/calendar/CountryFilter'))
+const VisaWarnings = dynamic(() => import('@/components/calendar/VisaWarnings'))
+const VisaWindows = dynamic(() => import('@/components/calendar/VisaWindows'))
+const CalendarCountryFilter = dynamic(() => import('@/components/calendar/CalendarCountryFilter'))
 import { countries } from '@/lib/data/countries-and-airports'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
-import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import EmptyState from '@/components/ui/EmptyState'
 
 export default function CalendarPage() {
