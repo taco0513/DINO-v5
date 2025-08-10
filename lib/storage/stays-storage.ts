@@ -72,6 +72,10 @@ export function saveStaysToStorage(stays: Stay[]): boolean {
     }
     
     localStorage.setItem(STAYS_STORAGE_KEY, JSON.stringify(data))
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('stays-updated'))
+    
     return true
   } catch (error) {
     logger.error('Failed to save stays to storage:', error)

@@ -113,6 +113,35 @@ export default function Home() {
 
   useEffect(() => {
     loadAllStays()
+    
+    // Set up an interval to check for updates every 5 seconds
+    const interval = setInterval(() => {
+      loadAllStays()
+    }, 5000)
+    
+    // Listen for storage events (when data changes in another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'dino-stays-data') {
+        logger.info('📡 Storage changed, reloading stays...')
+        loadAllStays()
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    
+    // Listen for custom events from the same tab
+    const handleStaysUpdate = () => {
+      logger.info('📡 Stays updated, reloading...')
+      loadAllStays()
+    }
+    
+    window.addEventListener('stays-updated', handleStaysUpdate)
+    
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('stays-updated', handleStaysUpdate)
+    }
   }, [loadAllStays])
 
   return (

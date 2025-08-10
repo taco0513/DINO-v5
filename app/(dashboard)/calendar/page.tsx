@@ -73,19 +73,30 @@ export default function CalendarPage() {
   const loadAllStays = async () => {
     setLoading(true)
     try {
-      // Load from localStorage first
-      let data = loadStaysFromStorage()
+      let data: Stay[] = []
       
-      // If no local data, try Supabase
-      if (data.length === 0) {
-        try {
-          data = await getStays()
-          // Save to localStorage for future use
+      // Try Supabase first for most up-to-date data
+      try {
+        console.log('📡 Loading from Supabase...')
+        data = await getStays()
+        
+        if (data.length > 0) {
+          console.log(`✅ Loaded ${data.length} stays from Supabase`)
+          // Save to localStorage as backup
+          saveStaysToStorage(data)
+        } else {
+          console.log('📊 No data in Supabase, checking localStorage...')
+          // If Supabase is empty, check localStorage
+          data = loadStaysFromStorage()
           if (data.length > 0) {
-            saveStaysToStorage(data)
+            console.log(`💾 Using ${data.length} stays from localStorage backup`)
           }
-        } catch (supabaseError) {
-          console.warn('Supabase not available, using localStorage only:', supabaseError)
+        }
+      } catch (supabaseError) {
+        console.warn('⚠️ Supabase unavailable, using localStorage:', supabaseError)
+        data = loadStaysFromStorage()
+        if (data.length > 0) {
+          console.log(`💾 Using ${data.length} stays from localStorage`)
         }
       }
       
