@@ -4,7 +4,11 @@ import { CustomThemeProvider } from '@/lib/context/ThemeContext'
 import { LanguageProvider } from '@/components/providers/LanguageProvider'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter'
+})
 
 export const metadata: Metadata = {
   title: 'DINO - Digital Nomad Visa Tracker',
@@ -17,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <body className={inter.className}>
         <CustomThemeProvider>
           <LanguageProvider>

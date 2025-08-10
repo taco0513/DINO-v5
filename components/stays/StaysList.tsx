@@ -39,6 +39,7 @@ import {
   type ResolvedStay 
 } from '@/lib/utils/date-conflict-resolver'
 import EditStayModalEnhanced from './EditStayModalEnhanced'
+import EmptyState from '@/components/ui/EmptyState'
 
 interface StaysListProps {
   countries: Country[]
@@ -353,23 +354,11 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', px: 3, pb: 3 }}>
         <List disablePadding sx={{ flex: 1 }}>
           {displayedStays.length === 0 ? (
-            <Box sx={{ 
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 31.25,
-              textAlign: 'center',
-              py: 8
-            }}>
-              <ListIcon sx={{ fontSize: '4rem', color: 'text.disabled', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No stays found
-              </Typography>
-              <Typography variant="body2" color="text.disabled">
-                No stays found for the selected country.
-              </Typography>
-            </Box>
+            <EmptyState 
+              variant={selectedCountry === 'ALL' ? 'no-stays' : 'no-results'}
+              onAction={selectedCountry !== 'ALL' ? () => setSelectedCountry('ALL') : undefined}
+              actionLabel="Clear Filter"
+            />
           ) : (
           displayedStays.map((stay, index) => {
             const country = countries.find(c => c.code === stay.countryCode)

@@ -32,7 +32,6 @@ import UserMenu from '@/components/auth/UserMenu'
 import dynamic from 'next/dynamic'
 
 // Removed Material Web Components - using pure MUI
-import Sidebar from '@/components/sidebar/SidebarEnhanced'
 import RollingCalendar from '@/components/calendar/RollingCalendar'
 import StayManagerEnhanced from '@/components/stays/StayManagerEnhanced'
 import StaysList from '@/components/stays/StaysList'
@@ -44,11 +43,15 @@ import VisaWarnings from '@/components/calendar/VisaWarnings'
 import VisaWindows from '@/components/calendar/VisaWindows'
 import CalendarCountryFilter from '@/components/calendar/CalendarCountryFilter'
 import { countries } from '@/lib/data/countries-and-airports'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
+import EmptyState from '@/components/ui/EmptyState'
 
 export default function CalendarPage() {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([])
   const [stays, setStays] = useState<Stay[]>([])
   const [loading, setLoading] = useState(true)
+  const [showAddStay, setShowAddStay] = useState(false)
   const [activeTab, setActiveTab] = useState(0) // 0: Calendar View, 1: Manage Stays
   const [visaWindowCountry, setVisaWindowCountry] = useState<string | null>(null) // For calendar visa window filter
   const theme = useTheme()
@@ -95,16 +98,7 @@ export default function CalendarPage() {
   )
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
-      <Sidebar 
-        countries={countries}
-        selectedCountry=""
-        onSelectCountry={() => {}}
-        currentPage="calendar"
-        onAddStay={loadAllStays} // 새 여행 기록 추가 시 목록 새로고침
-      />
-      
-      <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
+    <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
         {/* Material Design 2 Style Header */}
         <AppBar 
           position="sticky" 
@@ -226,8 +220,6 @@ export default function CalendarPage() {
 
           </Container>
         </Box>
-
-      </Box>
     </Box>
   )
 }

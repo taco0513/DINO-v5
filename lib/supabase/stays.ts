@@ -28,6 +28,21 @@ export async function addStay(stay: Omit<Stay, 'id'>) {
   try {
     const supabase = createClient()
     
+    // Validate required fields
+    if (!stay.countryCode) {
+      throw new Error('countryCode is required but was not provided')
+    }
+    
+    if (!stay.entryDate) {
+      throw new Error('entryDate is required but was not provided')
+    }
+    
+    logger.info('Adding stay to Supabase:', {
+      country_code: stay.countryCode,
+      entry_date: stay.entryDate,
+      exit_date: stay.exitDate
+    })
+    
     const { data, error } = await supabase
       .from('stays')
       .insert({

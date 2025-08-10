@@ -802,5 +802,6 @@ export default function TravelGuidePage() {
           </Box>
         </Box>
       </Box>
+    </Box>
   )
 }

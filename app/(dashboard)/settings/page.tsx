@@ -29,7 +29,6 @@ import {
   Save as SaveIcon,
   Warning as WarningIcon
 } from '@mui/icons-material'
-import Sidebar from '@/components/sidebar/SidebarEnhanced'
 import { useTheme as useCustomTheme } from '@/lib/context/ThemeContext'
 import { useTranslation } from '@/lib/i18n/translations'
 import { checkPassportExpiry, checkPassportValidityForTravel } from '@/lib/utils/passport-warnings'
@@ -164,16 +163,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'white' }}>
-      <Sidebar 
-        countries={[]}
-        selectedCountry=""
-        onSelectCountry={() => {}}
-        currentPage="settings"
-        onAddStay={() => {}}
-      />
-      
-      <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+    <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <Box 
           sx={{ 
@@ -381,7 +371,6 @@ export default function SettingsPage() {
             </Stack>
           </Container>
         </Box>
-      </Box>
 
       {/* Delete Confirmation Dialog */}
       <Dialog

@@ -64,10 +64,16 @@ export default function TableWidget({ stays, height = 320, title }: TableWidgetP
   }
   
   const calculateDuration = (stay: Stay) => {
+    if (!stay.entryDate) return 0
+    
     const entry = new Date(stay.entryDate)
+    if (isNaN(entry.getTime())) return 0
+    
     const exit = stay.exitDate ? new Date(stay.exitDate) : new Date()
+    if (isNaN(exit.getTime())) return 0
+    
     const days = Math.ceil((exit.getTime() - entry.getTime()) / (1000 * 60 * 60 * 24)) + 1
-    return days
+    return Math.max(0, days) // Ensure non-negative
   }
   
   const getVisaTypeColor = (type?: string): "default" | "primary" | "secondary" | "success" | "warning" => {
@@ -153,11 +159,13 @@ export default function TableWidget({ stays, height = 320, title }: TableWidgetP
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {format(new Date(stay.entryDate), 'MMM d, yyyy')}
+                        {stay.entryDate && !isNaN(new Date(stay.entryDate).getTime())
+                          ? format(new Date(stay.entryDate), 'MMM d, yyyy')
+                          : '—'}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      {stay.exitDate ? (
+                      {stay.exitDate && !isNaN(new Date(stay.exitDate).getTime()) ? (
                         <Typography variant="body2">
                           {format(new Date(stay.exitDate), 'MMM d, yyyy')}
                         </Typography>
@@ -167,7 +175,7 @@ export default function TableWidget({ stays, height = 320, title }: TableWidgetP
                     </TableCell>
                     <TableCell align="center">
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {duration}
+                        {duration > 0 ? duration : '—'}
                       </Typography>
                     </TableCell>
                     <TableCell>

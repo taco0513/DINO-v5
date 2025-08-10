@@ -88,10 +88,21 @@ export default function DebugStaysPage() {
 
   const syncToSupabase = async () => {
     try {
+      let syncedCount = 0
       for (const stay of localStays) {
+        // Debug: log what we're trying to sync
+        console.log('Syncing stay:', stay)
+        
+        // Make sure countryCode exists
+        if (!stay.countryCode) {
+          console.error('Skipping stay with no countryCode:', stay)
+          continue
+        }
+        
         await addStay(stay)
+        syncedCount++
       }
-      setSuccess(`Synced ${localStays.length} stays to Supabase`)
+      setSuccess(`Synced ${syncedCount} of ${localStays.length} stays to Supabase`)
       checkAuthAndLoadData()
     } catch (err: any) {
       setError(`Sync failed: ${err.message}`)

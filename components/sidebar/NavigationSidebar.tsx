@@ -20,21 +20,25 @@ import {
 import {
   Dashboard as DashboardIcon,
   Event as EventIcon,
-  Map as MapIcon,
-  Settings as SettingsIcon,
   AdminPanelSettings as AdminIcon,
   Person,
   Menu as MenuIcon,
   Add as AddIcon,
-  Feedback as FeedbackIcon
+  Feedback as FeedbackIcon,
+  ChevronLeft as ChevronLeftIcon
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
+import AddStayModalEnhanced from '@/components/stays/AddStayModalEnhanced'
+import { countries } from '@/lib/data/countries-and-airports'
 
 const drawerWidth = 280
+const collapsedDrawerWidth = 72
 
 export default function NavigationSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [userEmail, setUserEmail] = useState<string>('')
   const pathname = usePathname()
@@ -44,6 +48,11 @@ export default function NavigationSidebar() {
 
   useEffect(() => {
     loadUser()
+    // Load collapsed state from localStorage
+    const savedCollapsed = localStorage.getItem('sidebar-collapsed')
+    if (savedCollapsed === 'true') {
+      setIsCollapsed(true)
+    }
   }, [])
 
   const loadUser = async () => {
@@ -56,6 +65,20 @@ export default function NavigationSidebar() {
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
+  }
+
+  const handleCollapseToggle = () => {
+    const newState = !isCollapsed
+    setIsCollapsed(newState)
+    localStorage.setItem('sidebar-collapsed', newState.toString())
+  }
+
+  const handleModalOpen = () => setModalOpen(true)
+  const handleModalClose = () => setModalOpen(false)
+
+  const handleStayAdded = () => {
+    // Reload the page to refresh data
+    router.refresh()
   }
 
   const isAdminUser = userEmail === 'zbrianjin@gmail.com'
@@ -74,27 +97,9 @@ export default function NavigationSidebar() {
       visible: true
     },
     { 
-      text: 'Profile', 
-      icon: <Person />, 
-      path: '/profile',
-      visible: true
-    },
-    { 
-      text: 'Settings', 
-      icon: <SettingsIcon />, 
-      path: '/settings',
-      visible: true
-    },
-    { 
       text: 'Admin', 
       icon: <AdminIcon />, 
       path: '/admin',
-      visible: isAdminUser
-    },
-    { 
-      text: 'Test Feedback', 
-      icon: <FeedbackIcon />, 
-      path: '/test-feedback',
       visible: isAdminUser
     },
     { 
@@ -106,39 +111,83 @@ export default function NavigationSidebar() {
   ]
 
   const drawer = (
-    <Box>
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Logo/Title Section */}
       <Box sx={{ 
-        p: 3, 
+        p: isCollapsed ? 2 : 3,
         borderBottom: `1px solid ${theme.palette.divider}`,
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: isCollapsed ? 'center' : 'space-between'
       }}>
-        <Typography 
-          variant="h5" 
+        {!isCollapsed && (
+          <Box>
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                fontWeight: 'bold',
+                color: 'white',
+                letterSpacing: '0.5px'
+              }}
+            >
+              🦕 DINO
+            </Typography>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: 'rgba(255,255,255,0.8)',
+                display: 'block',
+                mt: 0.5
+              }}
+            >
+              Digital Nomad Visa Tracker
+            </Typography>
+          </Box>
+        )}
+        <IconButton
+          onClick={handleCollapseToggle}
           sx={{ 
-            fontWeight: 'bold',
             color: 'white',
-            textAlign: 'center',
-            letterSpacing: '0.5px'
+            bgcolor: 'rgba(255,255,255,0.1)',
+            '&:hover': {
+              bgcolor: 'rgba(255,255,255,0.2)'
+            }
+          }}
+          size="small"
+        >
+          {isCollapsed ? <MenuIcon /> : <ChevronLeftIcon />}
+        </IconButton>
+      </Box>
+
+      {/* Add Stay Button */}
+      <Box sx={{ px: 2, pt: 2 }}>
+        <Fab
+          color="primary"
+          onClick={handleModalOpen}
+          sx={{
+            width: isCollapsed ? 40 : '100%',
+            borderRadius: isCollapsed ? '50%' : 2,
+            boxShadow: 2,
+            transition: theme.transitions.create(['width', 'border-radius'], {
+              duration: theme.transitions.duration.short,
+            }),
+            '&:hover': {
+              boxShadow: 4
+            }
           }}
         >
-          🦕 DINO
-        </Typography>
-        <Typography 
-          variant="caption" 
-          sx={{ 
-            color: 'rgba(255,255,255,0.8)',
-            textAlign: 'center',
-            display: 'block',
-            mt: 0.5
-          }}
-        >
-          Digital Nomad Visa Tracker
-        </Typography>
+          <AddIcon sx={{ mr: isCollapsed ? 0 : 1 }} />
+          {!isCollapsed && (
+            <Typography sx={{ fontWeight: 500 }}>
+              Add Stay
+            </Typography>
+          )}
+        </Fab>
       </Box>
 
       {/* Navigation Items */}
-      <List sx={{ px: 2, py: 2 }}>
+      <List sx={{ px: isCollapsed ? 1 : 2, py: 2, flexGrow: 1 }}>
         {menuItems.filter(item => item.visible).map((item) => (
           <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
             <ListItemButton
@@ -147,6 +196,8 @@ export default function NavigationSidebar() {
               selected={pathname === item.path}
               sx={{
                 borderRadius: 2,
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
+                px: isCollapsed ? 0 : 2,
                 '&.Mui-selected': {
                   backgroundColor: theme.palette.primary.main + '15',
                   '&:hover': {
@@ -165,16 +216,21 @@ export default function NavigationSidebar() {
                 }
               }}
             >
-              <ListItemIcon sx={{ minWidth: 40 }}>
+              <ListItemIcon sx={{ 
+                minWidth: isCollapsed ? 'auto' : 40,
+                justifyContent: 'center'
+              }}>
                 {item.icon}
               </ListItemIcon>
-              <ListItemText 
-                primary={item.text}
-                primaryTypographyProps={{
-                  fontSize: '0.875rem',
-                  fontWeight: pathname === item.path ? 600 : 400
-                }}
-              />
+              {!isCollapsed && (
+                <ListItemText 
+                  primary={item.text}
+                  primaryTypographyProps={{
+                    fontSize: '0.875rem',
+                    fontWeight: pathname === item.path ? 600 : 400
+                  }}
+                />
+              )}
             </ListItemButton>
           </ListItem>
         ))}
@@ -184,39 +240,45 @@ export default function NavigationSidebar() {
 
       {/* User Info Section */}
       {user && (
-        <Box sx={{ p: 2, mt: 'auto' }}>
-          <Box sx={{ 
-            p: 2, 
-            bgcolor: theme.palette.grey[100],
-            borderRadius: 2,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
-          }}>
-            <Person sx={{ color: theme.palette.text.secondary }} />
-            <Box sx={{ overflow: 'hidden' }}>
-              <Typography 
-                variant="caption" 
-                sx={{ 
-                  display: 'block',
-                  color: theme.palette.text.secondary
-                }}
-              >
-                Logged in as
-              </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  fontWeight: 500,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {user.email}
-              </Typography>
+        <Box sx={{ p: 2 }}>
+          {isCollapsed ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Person sx={{ color: theme.palette.text.secondary }} />
             </Box>
-          </Box>
+          ) : (
+            <Box sx={{ 
+              p: 2, 
+              bgcolor: theme.palette.grey[100],
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              <Person sx={{ color: theme.palette.text.secondary }} />
+              <Box sx={{ overflow: 'hidden' }}>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    display: 'block',
+                    color: theme.palette.text.secondary
+                  }}
+                >
+                  Logged in as
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontWeight: 500,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {user.email}
+                </Typography>
+              </Box>
+            </Box>
+          )}
         </Box>
       )}
     </Box>
@@ -267,19 +329,32 @@ export default function NavigationSidebar() {
         variant="permanent"
         sx={{
           display: { xs: 'none', lg: 'block' },
+          width: isCollapsed ? collapsedDrawerWidth : drawerWidth,
+          flexShrink: 0,
           '& .MuiDrawer-paper': { 
             boxSizing: 'border-box', 
-            width: drawerWidth,
+            width: isCollapsed ? collapsedDrawerWidth : drawerWidth,
             borderRight: `1px solid ${theme.palette.divider}`,
-            position: 'fixed',
+            position: 'relative',  // Changed from 'fixed' to 'relative'
             height: '100vh',
-            overflowY: 'auto'
+            transition: theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
           },
         }}
         open
       >
         {drawer}
       </Drawer>
+
+      {/* Enhanced Add Stay Modal */}
+      <AddStayModalEnhanced
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        onAdded={handleStayAdded}
+        countries={countries}
+      />
     </>
   )
 }
