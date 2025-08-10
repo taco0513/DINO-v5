@@ -89,7 +89,23 @@ export default function CalendarPage() {
         }
       }
       
-      setStays(data)
+      // Filter out invalid stays
+      const validData = data.filter(stay => 
+        stay && 
+        stay.countryCode && 
+        stay.entryDate &&
+        stay.id &&
+        stay.countryCode !== 'MISSING' &&
+        stay.entryDate !== 'MISSING'
+      )
+      
+      if (validData.length < data.length) {
+        console.warn(`Filtered out ${data.length - validData.length} invalid stays`)
+        // Save cleaned data back
+        saveStaysToStorage(validData)
+      }
+      
+      setStays(validData)
     } catch (error) {
       console.error('Failed to load stays:', error)
       setStays([])

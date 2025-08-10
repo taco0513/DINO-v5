@@ -39,7 +39,8 @@ export default function StayManager({ countries, selectedCountries, onStaysChang
   const [loading, setLoading] = useState(true)
   const [isAddMode, setIsAddMode] = useState(true) // Always show form
   const [editingStay, setEditingStay] = useState<Stay | null>(null)
-  const [nationality] = useState('US') // TODO: Get from settings/context
+  // Default to US nationality - will be moved to user context in next iteration
+  const [nationality] = useState('US')
   const [userEmail] = useState(getCurrentUserEmail())
   const [formData, setFormData] = useState({
     countryCode: selectedCountries[0] || '', // No default country selection

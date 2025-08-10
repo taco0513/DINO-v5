@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { CustomThemeProvider } from '@/lib/context/ThemeContext'
+import { UserProvider } from '@/lib/context/UserContext'
 import { LanguageProvider } from '@/components/providers/LanguageProvider'
 import './globals.css'
 
@@ -15,6 +16,12 @@ export const metadata: Metadata = {
   description: 'Track your visa status and stay duration across multiple countries',
 }
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -23,11 +30,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className={inter.className}>
-        <CustomThemeProvider>
-          <LanguageProvider>
-            {children}
-          </LanguageProvider>
-        </CustomThemeProvider>
+        <UserProvider>
+          <CustomThemeProvider>
+            <LanguageProvider>
+              {children}
+            </LanguageProvider>
+          </CustomThemeProvider>
+        </UserProvider>
       </body>
     </html>
   )

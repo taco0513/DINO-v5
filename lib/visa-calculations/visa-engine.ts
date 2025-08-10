@@ -1,5 +1,5 @@
 // Comprehensive visa calculation engine
-import { Stay, isOngoingStay, calculateStayDuration } from '@/lib/types'
+import { Stay, isOngoingStay, calculateStayDuration, getTodayUTC } from '@/lib/types'
 import { getVisaRules, type VisaRule } from '@/lib/visa-rules/nationality-rules'
 
 export interface VisaStatus {
@@ -57,13 +57,20 @@ export function calculateVisaStatus(
   let nextResetDate: Date | undefined
 
   if (rule.resetType === 'exit') {
-    // Simple reset: only count stays since last exit
-    const lastExitDate = getLastExitDate(countryStays)
-    if (lastExitDate) {
-      relevantStays = countryStays.filter(stay => 
-        new Date(stay.entryDate) > lastExitDate
-      )
+    // Simple reset: only count stays since last exit from a different visit
+    const lastExitBeforeNewEntry = getLastExitBeforeNewEntry(countryStays)
+    if (lastExitBeforeNewEntry) {
+      relevantStays = countryStays.filter(stay => {
+        try {
+          const entryDate = parseUTCDate(stay.entryDate)
+          return entryDate && entryDate > lastExitBeforeNewEntry
+        } catch (error) {
+          console.error('Error filtering stays for exit reset:', error, stay)
+          return false
+        }
+      })
     } else {
+      // No qualifying exit found, count all stays as one session
       relevantStays = countryStays
     }
     daysUsed = relevantStays.reduce((total, stay) => 
@@ -72,19 +79,36 @@ export function calculateVisaStatus(
   } else {
     // Rolling window: count stays within the rolling period
     const windowStartDate = new Date(referenceDate)
-    windowStartDate.setDate(windowStartDate.getDate() - rule.periodDays)
+    windowStartDate.setDate(windowStartDate.getDate() - rule.periodDays + 1) // Adjusted for inclusive calculation
     
     relevantStays = countryStays.filter(stay => {
-      const entryDate = new Date(stay.entryDate)
-      const exitDate = stay.exitDate ? new Date(stay.exitDate) : referenceDate
-      return exitDate >= windowStartDate && entryDate <= referenceDate
+      try {
+        const entryDate = parseUTCDate(stay.entryDate)
+        if (!entryDate) return false
+
+        let exitDate: Date
+        if (stay.exitDate && stay.exitDate.trim() !== '') {
+          const parsed = parseUTCDate(stay.exitDate)
+          if (!parsed) return false
+          exitDate = parsed
+        } else {
+          // For ongoing stays, use reference date
+          exitDate = referenceDate
+        }
+
+        // Include stays that overlap with the rolling window
+        return exitDate >= windowStartDate && entryDate <= referenceDate
+      } catch (error) {
+        console.error('Error filtering stays for rolling window:', error, stay)
+        return false
+      }
     })
     
     daysUsed = calculateRollingWindowDays(relevantStays, windowStartDate, referenceDate)
     nextResetDate = calculateNextRollingReset(relevantStays, rule.periodDays)
   }
 
-  const daysRemaining = rule.maxDays - daysUsed
+  const daysRemaining = Math.max(0, rule.maxDays - daysUsed)
   const status = getVisaStatus(daysUsed, rule.maxDays)
 
   return {
@@ -116,15 +140,99 @@ export function calculateAllVisaStatuses(
 }
 
 // Helper functions
+function getLastExitBeforeNewEntry(stays: Stay[]): Date | null {
+  // For exit reset logic: find the most recent exit that's followed by a new entry
+  // This identifies the reset point between separate visits
+  
+  if (stays.length <= 1) return null
+  
+  try {
+    // Sort stays by entry date
+    const sortedStays = stays
+      .map(stay => ({
+        stay,
+        entryDate: parseUTCDate(stay.entryDate),
+        exitDate: stay.exitDate ? parseUTCDate(stay.exitDate) : null
+      }))
+      .filter(item => item.entryDate !== null)
+      .sort((a, b) => a.entryDate!.getTime() - b.entryDate!.getTime())
+
+    // Look for the most recent exit that's followed by a gap and then a new entry
+    for (let i = sortedStays.length - 2; i >= 0; i--) {
+      const currentStay = sortedStays[i]
+      const nextStay = sortedStays[i + 1]
+      
+      if (currentStay.exitDate && nextStay.entryDate) {
+        // If there's a gap between exit and next entry, this is a reset point
+        if (nextStay.entryDate > currentStay.exitDate) {
+          return currentStay.exitDate
+        }
+      }
+    }
+    
+    return null
+  } catch (error) {
+    console.error('Error finding last exit before new entry:', error)
+    return null
+  }
+}
+
+function getLastSeparateExitDate(allStays: Stay[], ongoingStays: Stay[]): Date | null {
+  // Find the most recent exit that represents the end of a separate visit
+  // (i.e., not part of the current stay session)
+  
+  if (ongoingStays.length > 0) {
+    // If there are ongoing stays, find exits before the earliest ongoing stay
+    const earliestOngoingEntry = ongoingStays
+      .map(stay => parseUTCDate(stay.entryDate))
+      .filter(date => date !== null)
+      .sort((a, b) => a!.getTime() - b!.getTime())[0]
+    
+    if (!earliestOngoingEntry) return null
+    
+    const previousCompletedStays = allStays.filter(stay => {
+      if (!stay.exitDate) return false
+      const entryDate = parseUTCDate(stay.entryDate)
+      const exitDate = parseUTCDate(stay.exitDate)
+      return entryDate && exitDate && exitDate < earliestOngoingEntry
+    })
+    
+    if (previousCompletedStays.length === 0) return null
+    
+    // Return the most recent exit from previous stays
+    const validExits = previousCompletedStays
+      .map(stay => parseUTCDate(stay.exitDate!))
+      .filter(date => date !== null)
+      .sort((a, b) => b!.getTime() - a!.getTime())
+    
+    return validExits.length > 0 ? validExits[0] : null
+  } else {
+    // No ongoing stays - for a single completed stay, there's no "separate" previous exit
+    // This means we're counting a completed session, so no reset needed
+    return null
+  }
+}
+
 function getLastExitDate(stays: Stay[]): Date | null {
-  const completedStays = stays.filter(stay => stay.exitDate)
+  const completedStays = stays.filter(stay => stay.exitDate && stay.exitDate.trim() !== '')
   if (completedStays.length === 0) return null
   
-  const sortedStays = completedStays.sort((a, b) => 
-    new Date(b.exitDate!).getTime() - new Date(a.exitDate!).getTime()
-  )
-  
-  return new Date(sortedStays[0].exitDate!)
+  try {
+    const validExitDates = completedStays
+      .map(stay => ({ stay, date: parseUTCDate(stay.exitDate!) }))
+      .filter(item => item.date !== null)
+    
+    if (validExitDates.length === 0) return null
+    
+    const sortedStays = validExitDates.sort((a, b) => 
+      b.date!.getTime() - a.date!.getTime()
+    )
+    
+    return sortedStays[0].date
+  } catch (error) {
+    console.error('Error getting last exit date:', error)
+    return null
+  }
 }
 
 function calculateRollingWindowDays(
@@ -135,20 +243,62 @@ function calculateRollingWindowDays(
   let totalDays = 0
   
   for (const stay of stays) {
-    const entryDate = new Date(stay.entryDate)
-    const exitDate = stay.exitDate ? new Date(stay.exitDate) : windowEnd
-    
-    // Calculate overlap with window
-    const overlapStart = new Date(Math.max(entryDate.getTime(), windowStart.getTime()))
-    const overlapEnd = new Date(Math.min(exitDate.getTime(), windowEnd.getTime()))
-    
-    if (overlapStart <= overlapEnd) {
-      const overlapDays = Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
-      totalDays += Math.max(0, overlapDays)
+    try {
+      // Use safe date parsing
+      const entryDate = parseUTCDate(stay.entryDate)
+      if (!entryDate) {
+        console.warn('Invalid entry date in rolling window calculation:', stay.entryDate)
+        continue
+      }
+
+      // For ongoing stays, use windowEnd as default exit date
+      let exitDate: Date
+      if (stay.exitDate && stay.exitDate.trim() !== '') {
+        const parsed = parseUTCDate(stay.exitDate)
+        if (!parsed) {
+          console.warn('Invalid exit date in rolling window calculation:', stay.exitDate)
+          continue
+        }
+        exitDate = parsed
+      } else {
+        exitDate = windowEnd
+      }
+
+      // Calculate overlap with window using UTC dates
+      const overlapStart = new Date(Math.max(entryDate.getTime(), windowStart.getTime()))
+      const overlapEnd = new Date(Math.min(exitDate.getTime(), windowEnd.getTime()))
+      
+      if (overlapStart <= overlapEnd) {
+        // Use the same day calculation logic as the main duration function
+        const overlapDays = calculateUTCDaysBetween(overlapStart, overlapEnd) + 1
+        totalDays += Math.max(0, overlapDays)
+      }
+    } catch (error) {
+      console.error('Error processing stay in rolling window:', error, stay)
+      continue
     }
   }
   
   return totalDays
+}
+
+// Helper function for UTC date parsing (matches types.ts logic)
+function parseUTCDate(dateString: string): Date | null {
+  try {
+    const date = new Date(dateString + 'T00:00:00.000Z')
+    return isNaN(date.getTime()) ? null : date
+  } catch {
+    return null
+  }
+}
+
+// Helper function for UTC day calculation (matches types.ts logic)
+function calculateUTCDaysBetween(startDate: Date, endDate: Date): number {
+  const start = new Date(Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()))
+  const end = new Date(Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()))
+  
+  const timeDiff = end.getTime() - start.getTime()
+  return Math.max(0, Math.floor(timeDiff / (1000 * 60 * 60 * 24)))
 }
 
 function calculateNextRollingReset(stays: Stay[], periodDays: number): Date | undefined {
@@ -210,7 +360,11 @@ export function validateNewStay(
     countryCode: newStay.countryCode,
     entryDate: newStay.entryDate,
     exitDate: newStay.exitDate,
-    notes: (newStay as any).notes || 'tourism'
+    fromCountry: newStay.fromCountry,
+    entryCity: newStay.entryCity,
+    exitCity: newStay.exitCity,
+    visaType: newStay.visaType,
+    notes: newStay.notes || 'Tourism validation'
   }
 
   const allStays = [...existingStays, tempStay]

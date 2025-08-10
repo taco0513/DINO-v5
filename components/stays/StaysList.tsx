@@ -379,7 +379,7 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
                   }
                 }}
                 secondaryAction={
-                  <Stack direction="row" spacing={1}>
+                  <Stack direction="row" spacing={{ xs: 0, sm: 1 }}>
                     <IconButton
                       edge="end"
                       onClick={() => {
@@ -388,6 +388,9 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
                       }}
                       color="primary"
                       size="small"
+                      sx={{ 
+                        padding: { xs: '4px', sm: '8px' }
+                      }}
                     >
                       <EditIcon fontSize="small" />
                     </IconButton>
@@ -396,6 +399,9 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
                       onClick={() => handleDelete(stay.id)}
                       color="error"
                       size="small"
+                      sx={{ 
+                        padding: { xs: '4px', sm: '8px' }
+                      }}
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
@@ -404,25 +410,28 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
               >
                 <ListItemText
                   primary={
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Typography variant="body1" fontWeight="medium">
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 2 }} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+                      <Typography variant="body1" fontWeight="medium" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                         {formatStayPeriod(stay)}
                       </Typography>
-                      <Chip
-                        label={isOngoing ? `${days} days (ongoing)` : `${days} days`}
-                        color={isOngoing ? "warning" : "primary"}
-                        size="small"
-                        variant={isOngoing ? "filled" : "outlined"}
-                      />
-                      {wasAutoResolved && (
+                      <Stack direction="row" spacing={1}>
                         <Chip
-                          label="Auto-fixed"
-                          color="success"
+                          label={isOngoing ? `${days} days (ongoing)` : `${days} days`}
+                          color={isOngoing ? "warning" : "primary"}
                           size="small"
-                          variant="outlined"
-                          sx={{ fontSize: '0.6875rem' }}
+                          variant={isOngoing ? "filled" : "outlined"}
+                          sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' } }}
                         />
-                      )}
+                        {wasAutoResolved && (
+                          <Chip
+                            label="Auto-fixed"
+                            color="success"
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontSize: { xs: '0.625rem', sm: '0.6875rem' } }}
+                          />
+                        )}
+                      </Stack>
                     </Stack>
                   }
                   secondary={

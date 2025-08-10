@@ -93,7 +93,7 @@ describe('Date Conflict Resolver', () => {
           id: '1',
           countryCode: 'JP',
           entryDate: '2024-01-01',
-          exitDate: null // Ongoing
+          exitDate: undefined // Ongoing
         },
         {
           id: '2',
@@ -211,7 +211,7 @@ describe('Date Conflict Resolver', () => {
           id: '1',
           countryCode: 'KR',
           entryDate: '2024-01-01',
-          exitDate: null // Ongoing
+          exitDate: undefined // Ongoing
         },
         {
           id: '2',

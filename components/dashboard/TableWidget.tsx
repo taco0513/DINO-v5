@@ -21,7 +21,7 @@ import {
   FlightTakeoff as DepartureIcon,
   FlightLand as ArrivalIcon
 } from '@mui/icons-material'
-import { Stay } from '@/lib/types'
+import { Stay, calculateStayDuration } from '@/lib/types'
 import { countries } from '@/lib/data/countries-and-airports'
 import { format } from 'date-fns'
 import { useState, useMemo } from 'react'
@@ -37,11 +37,28 @@ export default function TableWidget({ stays, height = 320, title }: TableWidgetP
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(5)
   
-  // Sort stays by entry date (most recent first)
+  // Filter and sort stays by entry date (most recent first)
   const sortedStays = useMemo(() => {
-    return [...stays].sort((a, b) => 
-      new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()
+    // Filter out invalid stays
+    const validStays = stays.filter(stay => 
+      stay && 
+      stay.countryCode && 
+      stay.entryDate &&
+      stay.id
     )
+    
+    return validStays.sort((a, b) => {
+      try {
+        const dateA = new Date(a.entryDate)
+        const dateB = new Date(b.entryDate)
+        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+          return 0
+        }
+        return dateB.getTime() - dateA.getTime()
+      } catch {
+        return 0
+      }
+    })
   }, [stays])
   
   // Paginated stays
@@ -63,17 +80,9 @@ export default function TableWidget({ stays, height = 320, title }: TableWidgetP
     return country ? `${country.flag} ${country.name}` : code
   }
   
-  const calculateDuration = (stay: Stay) => {
-    if (!stay.entryDate) return 0
-    
-    const entry = new Date(stay.entryDate)
-    if (isNaN(entry.getTime())) return 0
-    
-    const exit = stay.exitDate ? new Date(stay.exitDate) : new Date()
-    if (isNaN(exit.getTime())) return 0
-    
-    const days = Math.ceil((exit.getTime() - entry.getTime()) / (1000 * 60 * 60 * 24)) + 1
-    return Math.max(0, days) // Ensure non-negative
+  // Use centralized duration calculation with enhanced validation
+  const getDuration = (stay: Stay) => {
+    return calculateStayDuration(stay)
   }
   
   const getVisaTypeColor = (type?: string): "default" | "primary" | "secondary" | "success" | "warning" => {
@@ -120,7 +129,7 @@ export default function TableWidget({ stays, height = 320, title }: TableWidgetP
             {paginatedStays.length > 0 ? (
               paginatedStays.map((stay, index) => {
                 const isOngoing = !stay.exitDate
-                const duration = calculateDuration(stay)
+                const duration = getDuration(stay)
                 
                 return (
                   <TableRow 

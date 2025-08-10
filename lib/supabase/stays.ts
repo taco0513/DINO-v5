@@ -88,7 +88,7 @@ export async function updateStay(id: string, stay: Partial<Omit<Stay, 'id'>>) {
   try {
     const supabase = createClient()
     
-    const updateData: any = {}
+    const updateData: Record<string, any> = {}
     if (stay.countryCode) updateData.country_code = stay.countryCode
     if (stay.fromCountry !== undefined) updateData.from_country = stay.fromCountry || null
     if (stay.entryDate) updateData.entry_date = stay.entryDate

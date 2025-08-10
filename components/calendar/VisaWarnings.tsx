@@ -29,10 +29,10 @@ import {
 } from '@mui/icons-material'
 import { Country, Stay } from '@/lib/types'
 import { calculateAllVisaStatuses, type VisaStatus, type VisaCalculationContext } from '@/lib/visa-calculations/visa-engine'
-import { getCurrentUserEmail } from '@/lib/context/user'
+import { useUser } from '@/lib/context/UserContext'
 import { feedbackService } from '@/lib/services/feedback-service'
 import FeedbackButton from '@/components/feedback/FeedbackButton'
-// import { useSettings } from '@/lib/context/SettingsContext' // TODO: Create SettingsContext
+import { ReportType } from '@/lib/types/feedback'
 
 interface VisaWarningsProps {
   countries: Country[]
@@ -41,24 +41,23 @@ interface VisaWarningsProps {
 
 export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
   const theme = useTheme()
-  // Temporary fallback until SettingsContext is created
-  const [settings] = useState({ nationality: 'US' })
+  const { userEmail, nationality } = useUser()
   const [visaStatuses, setVisaStatuses] = useState<VisaStatus[]>([])
   const [expanded, setExpanded] = useState(true)
   const [loading, setLoading] = useState(true)
-  const userEmail = getCurrentUserEmail()
 
   useEffect(() => {
     calculateStatuses()
-  }, [stays, settings.nationality])
+  }, [stays, nationality])
 
   const calculateStatuses = () => {
     setLoading(true)
     try {
       const context: VisaCalculationContext = {
-        nationality: settings.nationality || 'US',
+        nationality: nationality || 'US',
         referenceDate: new Date(),
-        lookbackDays: 365
+        lookbackDays: 365,
+        userEmail
       }
       
       const statuses = calculateAllVisaStatuses(stays, context)
@@ -96,9 +95,22 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
     return Math.min((visaStatus.daysUsed / visaStatus.totalAllowedDays) * 100, 100)
   }
 
-  const handleFeedbackSubmit = async (report: any) => {
+  const handleFeedbackSubmit = async (report: {
+    reportType: ReportType
+    countryCode: string
+    countryName: string
+    userExperience: string
+    currentAppData?: string
+    entryDate?: Date
+    exitDate?: Date
+    additionalDetails?: string
+    evidenceUrls?: string[]
+  }) => {
     try {
-      await feedbackService.submitReport(report)
+      await feedbackService.submitReport({
+        ...report,
+        reportedBy: userEmail || 'anonymous'
+      })
       console.log('Feedback submitted successfully')
     } catch (error) {
       console.error('Failed to submit feedback:', error)
@@ -202,7 +214,7 @@ export default function VisaWarnings({ countries, stays }: VisaWarningsProps) {
               fontSize: '12px'
             }}
           >
-            {settings.nationality || 'US'} Passport
+            {nationality || 'US'} Passport
           </Typography>
           <IconButton
             size="small"

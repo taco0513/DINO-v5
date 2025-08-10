@@ -55,7 +55,10 @@ function checkStayConflict(stay1: Stay, stay2: Stay): DateConflict | null {
   const exit2 = stay2.exitDate ? new Date(stay2.exitDate) : new Date()
 
   // Check for temporal overlap (inclusive)
-  const hasOverlap = (entry1 <= exit2 && entry2 <= exit1)
+  // Note: For same-day travel, entry2 can equal exit1 (travel day)
+  const hasOverlap = (entry1 < exit2 && entry2 < exit1) || 
+                     (!stay1.exitDate && entry2 >= entry1) || 
+                     (!stay2.exitDate && entry1 >= entry2)
   
   if (!hasOverlap) return null
 
@@ -71,7 +74,7 @@ function checkStayConflict(stay1: Stay, stay2: Stay): DateConflict | null {
       stays: [stay1, stay2],
       severity: 'critical',
       description: 'Multiple ongoing stays detected',
-      suggestedResolution: 'End the earlier stay when the later one begins'
+      suggestedResolution: 'End the earlier stay on the travel day (same day as next country entry)'
     }
   }
 
@@ -93,7 +96,7 @@ function checkStayConflict(stay1: Stay, stay2: Stay): DateConflict | null {
       stays: [stay1, stay2],
       severity: 'medium',
       description: 'Travel sequence with overlapping dates',
-      suggestedResolution: 'Adjust dates to create logical travel sequence'
+      suggestedResolution: 'Set exit date to match travel day (same day as next country entry)'
     }
   }
 
@@ -162,17 +165,16 @@ function resolveImpossibleConflict(stays: ResolvedStay[], conflict: DateConflict
 
   return stays.map(stay => {
     if (stay.id === earlier.id) {
-      // End earlier stay one day before later begins
+      // End earlier stay on the same day as later begins (travel day)
       const laterEntry = new Date(later.entryDate)
-      const exitDate = new Date(laterEntry)
-      exitDate.setDate(exitDate.getDate() - 1)
+      const exitDate = laterEntry
 
       return {
         ...stay,
         originalExitDate: stay.exitDate,
         exitDate: exitDate.toISOString().split('T')[0],
         autoResolved: true,
-        resolutionReason: `Auto-ended before ${later.countryCode} trip`
+        resolutionReason: `Travel to ${later.countryCode} on ${exitDate.toISOString().split('T')[0]}`
       }
     }
     return stay
@@ -230,15 +232,14 @@ function resolveSequenceConflict(stays: ResolvedStay[], conflict: DateConflict):
 
       if (shouldAdjust) {
         const laterEntry = new Date(later.entryDate)
-        const exitDate = new Date(laterEntry)
-        exitDate.setDate(exitDate.getDate() - 1)
+        const exitDate = laterEntry // Exit on the same day as entry to next country
 
         return {
           ...stay,
           originalExitDate: stay.exitDate,
           exitDate: exitDate.toISOString().split('T')[0],
           autoResolved: true,
-          resolutionReason: `Travel sequence to ${later.countryCode}`
+          resolutionReason: `Travel to ${later.countryCode} on ${exitDate.toISOString().split('T')[0]}`
         }
       }
     }

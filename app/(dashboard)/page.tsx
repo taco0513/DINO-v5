@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { 
   Box, 
   Typography, 
@@ -45,11 +45,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const theme = useTheme()
 
-  useEffect(() => {
-    loadAllStays()
-  }, [])
-
-  const loadAllStays = async () => {
+  const loadAllStays = useCallback(async () => {
     setLoading(true)
     try {
       let data: Stay[] = []
@@ -79,6 +75,23 @@ export default function Home() {
         }
       }
       
+      // Filter out invalid stays first
+      const validData = data.filter(stay => 
+        stay && 
+        stay.countryCode && 
+        stay.entryDate &&
+        stay.id &&
+        stay.countryCode !== 'MISSING' &&
+        stay.entryDate !== 'MISSING'
+      )
+      
+      if (validData.length < data.length) {
+        logger.warn(`🧹 Filtered out ${data.length - validData.length} invalid stays`)
+        data = validData
+        // Save cleaned data back to localStorage
+        saveStaysToStorage(data)
+      }
+      
       // Auto-resolve any date conflicts
       const conflicts = detectDateConflicts(data)
       if (conflicts.some(c => c.severity === 'critical')) {
@@ -96,7 +109,11 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadAllStays()
+  }, [loadAllStays])
 
   return (
     <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>

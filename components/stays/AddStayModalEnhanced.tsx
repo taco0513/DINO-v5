@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Stay, Country } from '@/lib/types'
-import { addStayToStorage } from '@/lib/storage/stays-storage'
+import { addStayToStorage, saveStaysToStorage } from '@/lib/storage/stays-storage'
 import { addStay } from '@/lib/supabase/stays'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
 import { getCurrentUserEmail } from '@/lib/context/user'
 import { loadStaysFromStorage } from '@/lib/storage/stays-storage'
+import { autoResolveConflicts, detectDateConflicts, type ResolvedStay } from '@/lib/utils/date-conflict-resolver'
 import CountrySelect from '@/components/ui/CountrySelect'
 
 interface AddStayModalEnhancedProps {
@@ -36,6 +37,7 @@ export default function AddStayModalEnhanced({
   const [userEmail] = useState(getCurrentUserEmail())
   const [loading, setLoading] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
+  const [autoResolvedMessage, setAutoResolvedMessage] = useState('')
   
   // Sort countries alphabetically
   const sortedCountries = useMemo(() => {
@@ -201,8 +203,8 @@ export default function AddStayModalEnhanced({
     setErrors(prev => ({ ...prev, general: '' }))
 
     try {
-      // Add to localStorage first
-      const newStay = addStayToStorage({
+      // Create new stay object
+      const newStayData = {
         countryCode: formData.countryCode,
         fromCountry: formData.fromCountry || undefined,
         entryDate: formData.entryDate,
@@ -211,7 +213,87 @@ export default function AddStayModalEnhanced({
         exitCity: formData.exitCity || undefined,
         visaType: formData.visaType as Stay['visaType'],
         notes: formData.notes || undefined
-      })
+      }
+
+      // Load existing stays and check for conflicts
+      const existingStays = loadStaysFromStorage()
+      
+      // Create temporary stay with ID for conflict detection
+      const tempStay: Stay = {
+        ...newStayData,
+        id: 'temp-' + Date.now()
+      }
+      
+      // Check for conflicts with new stay
+      const allStays = [...existingStays, tempStay]
+      const conflicts = detectDateConflicts(allStays)
+      
+      // If conflicts found, auto-resolve them
+      let finalStays = existingStays
+      let resolvedNewStay = newStayData
+      let wasAutoResolved = false
+      
+      if (conflicts.length > 0) {
+        console.log('Date conflicts detected, auto-resolving...')
+        const resolvedStays = autoResolveConflicts(allStays)
+        
+        // Find the resolved new stay and existing stays
+        const resolvedNewStayData = resolvedStays.find(s => s.id === tempStay.id)
+        if (resolvedNewStayData) {
+          resolvedNewStay = {
+            countryCode: resolvedNewStayData.countryCode,
+            fromCountry: resolvedNewStayData.fromCountry,
+            entryDate: resolvedNewStayData.entryDate,
+            exitDate: resolvedNewStayData.exitDate,
+            entryCity: resolvedNewStayData.entryCity,
+            exitCity: resolvedNewStayData.exitCity,
+            visaType: resolvedNewStayData.visaType,
+            notes: resolvedNewStayData.notes
+          }
+          wasAutoResolved = resolvedNewStayData.autoResolved || false
+        }
+        
+        // Update existing stays with resolved versions
+        // Make sure we only keep valid stays
+        finalStays = resolvedStays
+          .filter(s => s.id !== tempStay.id && s.countryCode && s.entryDate)
+          .map(s => ({
+            id: s.id,
+            countryCode: s.countryCode,
+            fromCountry: s.fromCountry,
+            entryDate: s.entryDate,
+            exitDate: s.exitDate,
+            entryCity: s.entryCity,
+            exitCity: s.exitCity,
+            visaType: s.visaType,
+            notes: s.notes
+          }))
+        
+        // Save resolved existing stays first
+        saveStaysToStorage(finalStays)
+      }
+
+      // Validate the new stay before saving
+      if (!resolvedNewStay.countryCode || !resolvedNewStay.entryDate) {
+        throw new Error('Invalid stay data: missing country or entry date')
+      }
+      
+      // Don't add the new stay again if we already saved all resolved stays
+      let newStay: Stay | null = null
+      
+      if (conflicts.length === 0) {
+        // No conflicts, add normally
+        newStay = addStayToStorage(resolvedNewStay)
+      } else {
+        // Conflicts were resolved, new stay is already in finalStays
+        // Just add it to the saved stays
+        newStay = {
+          ...resolvedNewStay,
+          id: `stay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        }
+        const allStaysWithNew = [...finalStays, newStay]
+        saveStaysToStorage(allStaysWithNew)
+      }
 
       if (!newStay) {
         throw new Error('Failed to save stay record')
@@ -231,8 +313,28 @@ export default function AddStayModalEnhanced({
         console.warn('Failed to sync with Supabase (non-critical):', supabaseError)
       })
 
-      // Show success state
+      // Show success state with auto-resolution notification
       setSavedSuccess(true)
+      
+      // Show notification if dates were auto-resolved
+      if (wasAutoResolved) {
+        // Check if any existing stays were modified
+        const modifiedStays = finalStays.filter((stay, index) => {
+          const original = existingStays[index]
+          return original && (
+            stay.exitDate !== original.exitDate ||
+            stay.entryDate !== original.entryDate
+          )
+        })
+        
+        if (modifiedStays.length > 0) {
+          const modifiedCountries = modifiedStays.map(s => s.countryCode).join(', ')
+          setAutoResolvedMessage(`Previous stay(s) in ${modifiedCountries} were automatically adjusted. Exit dates set to match travel day.`)
+        } else {
+          setAutoResolvedMessage('Travel dates were automatically adjusted to resolve conflicts')
+        }
+        console.log('Travel dates were automatically adjusted to resolve conflicts')
+      }
       
       // Reset form
       setFormData({
@@ -258,6 +360,7 @@ export default function AddStayModalEnhanced({
       onAdded()
       setTimeout(() => {
         setSavedSuccess(false)
+        setAutoResolvedMessage('')
         onClose()
       }, 1500)
 
@@ -275,6 +378,7 @@ export default function AddStayModalEnhanced({
   const handleClose = () => {
     if (!loading) {
       setSavedSuccess(false)
+      setAutoResolvedMessage('')
       onClose()
     }
   }
@@ -282,23 +386,53 @@ export default function AddStayModalEnhanced({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-xl w-full max-w-md md:max-w-lg lg:max-w-xl animate-fade-in">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4"
+      style={{ 
+        pointerEvents: 'auto',
+        touchAction: 'auto',
+        overflowY: 'auto'
+      }}
+    >
+      <div 
+        className="bg-white rounded-xl w-full max-w-md sm:max-w-lg lg:max-w-xl animate-fade-in my-4 sm:my-8 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto relative"
+        style={{ 
+          pointerEvents: 'auto',
+          touchAction: 'auto'
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">✈️ Add Travel Record</h2>
+          <h2 id="modal-title" className="text-xl font-semibold text-gray-900">✈️ Add Travel Record</h2>
           <p className="text-sm text-gray-500 mt-1">Track your stay duration and visa compliance</p>
         </div>
 
         {/* Success Message */}
         {savedSuccess && (
-          <div className="mx-6 mt-4 p-3 bg-green-50 border border-green-200 rounded-lg animate-slide-down">
-            <p className="text-green-700 font-medium flex items-center gap-2">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Stay record saved successfully!
-            </p>
+          <div className="mx-6 mt-4 space-y-2">
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg animate-slide-down">
+              <p className="text-green-700 font-medium flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Stay record saved successfully!
+              </p>
+            </div>
+            
+            {/* Auto-resolution notification */}
+            {autoResolvedMessage && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg animate-slide-down">
+                <p className="text-blue-700 text-sm flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  {autoResolvedMessage}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -317,7 +451,7 @@ export default function AddStayModalEnhanced({
               <span className="text-lg">🗺️</span> Travel Route
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* From Country */}
               <CountrySelect
                 id="from-country"
@@ -360,8 +494,9 @@ export default function AddStayModalEnhanced({
                   onChange={(e) => handleChange('entryCity', e.target.value.toUpperCase())}
                   placeholder="e.g., ICN, GMP"
                   maxLength={5}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 pointer-events-auto"
                   aria-label="Departure airport or city code"
+                  style={{ pointerEvents: 'auto' }}
                 />
               </div>
 
@@ -390,7 +525,7 @@ export default function AddStayModalEnhanced({
               <span className="text-lg">📅</span> Dates & Visa
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Entry Date */}
               <div>
                 <label htmlFor="entry-date" className="block text-sm font-medium text-gray-700 mb-1">
@@ -451,7 +586,7 @@ export default function AddStayModalEnhanced({
               </div>
 
               {/* Visa Type */}
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <label htmlFor="visa-type" className="block text-sm font-medium text-gray-700 mb-1">
                   Visa Type
                 </label>

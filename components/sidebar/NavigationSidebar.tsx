@@ -310,7 +310,7 @@ export default function NavigationSidebar() {
           position: 'fixed',
           top: 16,
           left: 16,
-          zIndex: theme.zIndex.drawer + 2,
+          zIndex: 1100, // Lower than modal (9999) but high enough to be above content
           bgcolor: 'background.paper',
           boxShadow: 2
         }}
@@ -328,6 +328,7 @@ export default function NavigationSidebar() {
         }}
         sx={{
           display: { xs: 'block', lg: 'none' },
+          zIndex: 1099, // Lower than modal
           '& .MuiDrawer-paper': { 
             boxSizing: 'border-box', 
             width: drawerWidth,
@@ -349,8 +350,11 @@ export default function NavigationSidebar() {
             boxSizing: 'border-box', 
             width: isCollapsed ? collapsedDrawerWidth : drawerWidth,
             borderRight: `1px solid ${theme.palette.divider}`,
-            position: 'relative',  // Changed from 'fixed' to 'relative'
+            position: 'fixed',  // Fixed position for sticky behavior
             height: '100vh',
+            top: 0,
+            left: 0,
+            zIndex: 1200,
             transition: theme.transitions.create('width', {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.enteringScreen,

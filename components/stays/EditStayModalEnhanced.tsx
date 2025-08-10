@@ -199,6 +199,11 @@ export default function EditStayModalEnhanced({
     setErrors(prev => ({ ...prev, general: '' }))
 
     try {
+      // Validate data before updating
+      if (!formData.countryCode || !formData.entryDate) {
+        throw new Error('Invalid stay data: missing country or entry date')
+      }
+      
       // Update in localStorage first
       const updatedStay = updateStayInStorage(stay.id, {
         countryCode: formData.countryCode,
@@ -334,7 +339,7 @@ export default function EditStayModalEnhanced({
               {/* Departure City */}
               <div>
                 <label htmlFor="exit-city" className="block text-sm font-medium text-gray-700 mb-1">
-                  Arrival Airport/City
+                  Departure Airport/City
                 </label>
                 <input
                   id="exit-city"
@@ -344,15 +349,15 @@ export default function EditStayModalEnhanced({
                   placeholder="e.g., SGN, HAN"
                   maxLength={5}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  aria-label="Arrival airport or city code"
+                  aria-label="Departure airport or city code"
                 />
-                <p className="text-xs text-gray-500 mt-1">Where you arrived</p>
+                <p className="text-xs text-gray-500 mt-1">Where you departed from</p>
               </div>
 
               {/* Arrival City */}
               <div>
                 <label htmlFor="entry-city" className="block text-sm font-medium text-gray-700 mb-1">
-                  Departure Airport/City
+                  Arrival Airport/City
                 </label>
                 <input
                   id="entry-city"
@@ -362,9 +367,9 @@ export default function EditStayModalEnhanced({
                   placeholder="e.g., ICN, GMP"
                   maxLength={5}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  aria-label="Departure airport or city code"
+                  aria-label="Arrival airport or city code"
                 />
-                <p className="text-xs text-gray-500 mt-1">Where you departed from</p>
+                <p className="text-xs text-gray-500 mt-1">Where you arrived</p>
               </div>
             </div>
           </div>

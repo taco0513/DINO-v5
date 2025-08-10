@@ -35,10 +35,10 @@ export const visaRulesByNationality: { [nationality: string]: NationalityVisaRul
       description: '30 days visa-free, extendable by 30 days'
     },
     'VN': {
-      maxDays: 90,
-      periodDays: 90,
+      maxDays: 45,
+      periodDays: 45,
       resetType: 'exit',
-      description: '90 days with e-visa (single/multiple entry), resets on exit'
+      description: '45 days visa-free, resets on exit'
     }
   },
   

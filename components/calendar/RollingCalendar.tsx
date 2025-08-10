@@ -592,7 +592,7 @@ export default function RollingCalendar({
         <Skeleton variant="text" width="25%" height={40} sx={{ mb: 3 }} />
         <Grid container spacing={2}>
           {Array.from({ length: 16 }).map((_, i) => (
-            <Grid size={{ xs: 6, md: 3 }} key={i}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
               <Skeleton variant="rectangular" height={250} sx={{ borderRadius: 2 }} />
             </Grid>
           ))}
@@ -705,7 +705,7 @@ export default function RollingCalendar({
             const calendarDays = getCalendarDaysForMonth(monthDate)
             
             return (
-              <Grid size={{ xs: 6, md: 3 }} key={monthIndex}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={monthIndex}>
               <Box 
                 sx={{ 
                   p: 2, 

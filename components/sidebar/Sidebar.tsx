@@ -45,7 +45,7 @@ interface SidebarProps {
   selectedCountry: string
   onSelectCountry: (code: string) => void
   currentPage?: string
-  onAddStay?: (stayData: any) => void
+  onAddStay?: (stayData: Partial<Stay>) => void
 }
 
 // Material Design 2 Navigation Drawer 크기
@@ -57,9 +57,19 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
   const [user, setUser] = useState<User | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const router = useRouter()
-  const [nationality] = useState('US') // TODO: Get from settings/context
+  // Default to US nationality - will be moved to user context in next iteration
+  const [nationality] = useState('US')
   const [userEmail] = useState(getCurrentUserEmail())
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    countryCode: string
+    fromCountry: string
+    entryDate: string
+    exitDate: string
+    entryCity: string
+    exitCity: string
+    visaType: Stay['visaType'] | ''
+    notes: string
+  }>({
     countryCode: '', // No default country selection
     fromCountry: '',
     entryDate: '',
@@ -153,7 +163,16 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
     })
     
     if (onAddStay) {
-      onAddStay(formData)
+      onAddStay({
+        countryCode: formData.countryCode,
+        fromCountry: formData.fromCountry || undefined,
+        entryDate: formData.entryDate,
+        exitDate: formData.exitDate || undefined,
+        entryCity: formData.entryCity || undefined,
+        exitCity: formData.exitCity || undefined,
+        visaType: (formData.visaType || undefined) as Stay['visaType'],
+        notes: formData.notes || undefined
+      })
     }
     handleModalClose()
     alert('Stay added successfully!')
@@ -341,7 +360,16 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
         onClose={handleModalClose}
         onAdded={() => {
           if (onAddStay) {
-            onAddStay(formData)
+            onAddStay({
+              countryCode: formData.countryCode,
+              fromCountry: formData.fromCountry || undefined,
+              entryDate: formData.entryDate,
+              exitDate: formData.exitDate || undefined,
+              entryCity: formData.entryCity || undefined,
+              exitCity: formData.exitCity || undefined,
+              visaType: (formData.visaType || undefined) as Stay['visaType'],
+              notes: formData.notes || undefined
+            })
           }
         }}
         countries={countries}
@@ -429,7 +457,7 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
                       setFormData({ 
                         ...formData, 
                         countryCode: newCountry,
-                        visaType: visaTypes.length > 0 ? visaTypes[0].value : ''
+                        visaType: visaTypes.length > 0 ? (visaTypes[0].value as Stay['visaType']) : ''
                       })
                     }}
                     required
@@ -466,7 +494,7 @@ export default function Sidebar({ countries, selectedCountry, onSelectCountry, c
                     select
                     label="Visa Type"
                     value={formData.visaType}
-                    onChange={(e) => setFormData({ ...formData, visaType: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, visaType: e.target.value as Stay['visaType'] | '' })}
                     fullWidth
                     size="small"
                     helperText={availableVisaTypes.find(v => v.value === formData.visaType)?.duration || ''}

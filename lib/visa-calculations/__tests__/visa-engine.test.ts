@@ -104,7 +104,7 @@ describe('Visa Engine', () => {
           id: '1',
           countryCode: 'JP',
           entryDate: '2024-03-01',
-          exitDate: null // Ongoing stay
+          exitDate: undefined // Ongoing stay
         }
       ]
       
@@ -126,7 +126,7 @@ describe('Visa Engine', () => {
           id: '1',
           countryCode: 'JP',
           entryDate: '2024-01-01',
-          exitDate: '2024-02-25' // 56 days (62% of 90 days)
+          exitDate: '2024-03-03' // 63 days (70% of 90 days)
         }
       ]
       
@@ -137,8 +137,8 @@ describe('Visa Engine', () => {
       
       const status = calculateVisaStatus('JP', stays, context)
       
-      expect(status.daysUsed).toBe(56)
-      expect(status.daysRemaining).toBe(34)
+      expect(status.daysUsed).toBe(63)
+      expect(status.daysRemaining).toBe(27)
       expect(status.status).toBe('warning')
     })
 
@@ -147,8 +147,8 @@ describe('Visa Engine', () => {
         {
           id: '1',
           countryCode: 'JP',
-          entryDate: '2024-01-01',
-          exitDate: '2024-03-10' // 69 days (77% of 90 days)
+          entryDate: '2023-12-26',
+          exitDate: '2024-03-21' // 81 days within 180-day rolling window (90% of 90 days)
         }
       ]
       
@@ -159,8 +159,8 @@ describe('Visa Engine', () => {
       
       const status = calculateVisaStatus('JP', stays, context)
       
-      expect(status.daysUsed).toBe(69)
-      expect(status.daysRemaining).toBe(21)
+      expect(status.daysUsed).toBe(81)
+      expect(status.daysRemaining).toBe(9)
       expect(status.status).toBe('critical')
     })
 
@@ -170,7 +170,7 @@ describe('Visa Engine', () => {
           id: '1',
           countryCode: 'VN',
           entryDate: '2024-01-01',
-          exitDate: '2024-03-01' // 60 days (exceeds 45-day limit)
+          exitDate: '2024-03-01' // 61 days (exceeds 45-day limit)
         }
       ]
       
@@ -181,7 +181,7 @@ describe('Visa Engine', () => {
       
       const status = calculateVisaStatus('VN', stays, context)
       
-      expect(status.daysUsed).toBe(60)
+      expect(status.daysUsed).toBe(61)
       expect(status.daysRemaining).toBe(0)
       expect(status.totalAllowedDays).toBe(45)
       expect(status.status).toBe('exceeded')

@@ -1,12 +1,7 @@
-// Simple user context for the application
-// In a real app, this would come from authentication/session
+// Backward compatibility layer for user context
+// This file is deprecated - use UserContext.tsx for new implementations
 
-export function getCurrentUserEmail(): string | undefined {
-  // For now, return the specific email to enable the 365-day Korea rule
-  // In a real app, this would come from session/auth context
-  return 'zbrianjin@gmail.com'
-}
+import { getCurrentUserEmail, isCurrentUser } from './UserContext'
 
-export function isCurrentUser(email: string): boolean {
-  return getCurrentUserEmail() === email
-}
+// Re-export functions for backward compatibility
+export { getCurrentUserEmail, isCurrentUser }

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@mui/material'
 import { Feedback as FeedbackIcon } from '@mui/icons-material'
 import FeedbackDialog from './FeedbackDialog'
-import { FeedbackButtonProps } from '@/lib/types/feedback'
+import { FeedbackButtonProps, CreateUserReportRequest } from '@/lib/types/feedback'
 
 export default function FeedbackButton({
   countryCode,
@@ -19,7 +19,7 @@ export default function FeedbackButton({
     return null // Don't show feedback button if user isn't logged in
   }
 
-  const handleSubmit = async (report: any) => {
+  const handleSubmit = async (report: CreateUserReportRequest) => {
     if (onSubmit) {
       onSubmit(report)
     }

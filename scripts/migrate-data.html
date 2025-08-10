@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DINO Data Migration Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #1a73e8;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #1a73e8;
+        }
+        input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1557b0;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .data-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 DINO Data Migration Tool</h1>
+        <p class="subtitle">Transfer your travel data between different DINO deployments</p>
+
+        <div class="step">
+            <h3>Step 1: Export Data from Old URL</h3>
+            <p>Enter the URL where your data is currently stored:</p>
+            <input type="url" id="sourceUrl" placeholder="https://dino-v5-xxxxx.vercel.app" 
+                   value="https://dino-v5-c67tcfbyj-zimos-projects-6824b9bc.vercel.app">
+            <br>
+            <button onclick="exportData()">Export Data</button>
+            <div id="exportStatus"></div>
+            <div id="dataPreview"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Import Data to New URL</h3>
+            <p>Enter the URL where you want to import your data:</p>
+            <input type="url" id="targetUrl" placeholder="https://dino-v5.vercel.app" 
+                   value="https://dino-v5.vercel.app">
+            <br>
+            <button id="importBtn" onclick="importData()" disabled>Import Data</button>
+            <div id="importStatus"></div>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong>
+            <ul>
+                <li>This tool must be opened from the SAME domain as your old data</li>
+                <li>Use the stable URL (https://dino-v5.vercel.app) to avoid future data loss</li>
+                <li>Your data is stored locally in your browser, not on servers</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let exportedData = null;
+
+        function exportData() {
+            const sourceUrl = document.getElementById('sourceUrl').value;
+            const exportStatus = document.getElementById('exportStatus');
+            const dataPreview = document.getElementById('dataPreview');
+            
+            if (!sourceUrl) {
+                exportStatus.innerHTML = '<div class="error">Please enter a source URL</div>';
+                return;
+            }
+
+            // Open source URL in new tab to access its localStorage
+            exportStatus.innerHTML = '<div class="warning">Opening source URL in new tab. Please follow these steps:<br>' +
+                '1. Go to the new tab<br>' +
+                '2. Open browser console (F12 or Cmd+Option+I)<br>' +
+                '3. Run this command: <code>copy(localStorage.getItem("dino-v5-stays"))</code><br>' +
+                '4. Come back here and paste the data</div>';
+            
+            // Create textarea for manual paste
+            dataPreview.innerHTML = '<textarea id="dataInput" style="width:100%; height:200px; margin-top:10px;" ' +
+                'placeholder="Paste your exported data here"></textarea><br>' +
+                '<button onclick="processExportedData()">Process Data</button>';
+            
+            window.open(sourceUrl, '_blank');
+        }
+
+        function processExportedData() {
+            const dataInput = document.getElementById('dataInput').value;
+            const exportStatus = document.getElementById('exportStatus');
+            const dataPreview = document.getElementById('dataPreview');
+            
+            try {
+                exportedData = JSON.parse(dataInput);
+                const stayCount = exportedData ? exportedData.length : 0;
+                
+                exportStatus.innerHTML = `<div class="success">✅ Successfully exported ${stayCount} travel records!</div>`;
+                dataPreview.innerHTML = `<div class="data-preview">Exported ${stayCount} stays:<br>${JSON.stringify(exportedData, null, 2)}</div>`;
+                
+                // Enable import button
+                document.getElementById('importBtn').disabled = false;
+            } catch (error) {
+                exportStatus.innerHTML = '<div class="error">❌ Invalid data format. Please make sure you copied the correct data.</div>';
+                console.error('Export error:', error);
+            }
+        }
+
+        function importData() {
+            const targetUrl = document.getElementById('targetUrl').value;
+            const importStatus = document.getElementById('importStatus');
+            
+            if (!targetUrl) {
+                importStatus.innerHTML = '<div class="error">Please enter a target URL</div>';
+                return;
+            }
+
+            if (!exportedData) {
+                importStatus.innerHTML = '<div class="error">No data to import. Please export data first.</div>';
+                return;
+            }
+
+            // Instructions for manual import
+            importStatus.innerHTML = '<div class="warning">To import data:<br>' +
+                '1. Click the button below to copy the import command<br>' +
+                '2. Go to ' + targetUrl + '<br>' +
+                '3. Open browser console (F12 or Cmd+Option+I)<br>' +
+                '4. Paste and run the command<br>' +
+                '5. Refresh the page to see your imported data</div>' +
+                '<button onclick="copyImportCommand()">Copy Import Command</button>' +
+                '<div id="copyStatus"></div>';
+        }
+
+        function copyImportCommand() {
+            const command = `localStorage.setItem('dino-v5-stays', '${JSON.stringify(exportedData)}'); location.reload();`;
+            navigator.clipboard.writeText(command).then(() => {
+                document.getElementById('copyStatus').innerHTML = '<div class="success">✅ Command copied! Now paste it in the console at the target URL.</div>';
+            }).catch(err => {
+                document.getElementById('copyStatus').innerHTML = '<div class="error">Failed to copy. Please copy manually: <br><code>' + command + '</code></div>';
+            });
+        }
+
+        // Alternative: Direct localStorage access if on same domain
+        function checkLocalData() {
+            try {
+                const localStays = localStorage.getItem('dino-v5-stays');
+                if (localStays) {
+                    const stays = JSON.parse(localStays);
+                    console.log(`Found ${stays.length} stays in current domain's localStorage`);
+                }
+            } catch (error) {
+                console.log('No local data found');
+            }
+        }
+
+        checkLocalData();
+    </script>
+</body>
+</html>

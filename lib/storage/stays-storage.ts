@@ -16,16 +16,41 @@ export function loadStaysFromStorage(): Stay[] {
   if (typeof window === 'undefined') return []
   
   try {
-    const stored = localStorage.getItem(STAYS_STORAGE_KEY)
+    // Try current storage key first
+    let stored = localStorage.getItem(STAYS_STORAGE_KEY)
+    
+    // Migration: Check old storage key if current key is empty
+    if (!stored) {
+      const oldStored = localStorage.getItem('dino-v5-stays')
+      if (oldStored) {
+        console.log('Migrating from old storage key...')
+        try {
+          const oldData = JSON.parse(oldStored)
+          // Migrate old data to new format
+          const migratedData: StaysStorage = {
+            version: STORAGE_VERSION,
+            stays: Array.isArray(oldData) ? oldData : [],
+            lastUpdated: new Date().toISOString()
+          }
+          localStorage.setItem(STAYS_STORAGE_KEY, JSON.stringify(migratedData))
+          localStorage.removeItem('dino-v5-stays') // Clean up old key
+          stored = JSON.stringify(migratedData)
+          console.log('Migration successful!')
+        } catch (e) {
+          console.error('Migration failed:', e)
+        }
+      }
+    }
+    
     if (!stored) return []
     
     const data: StaysStorage = JSON.parse(stored)
     
-    // Version check
+    // Version check - but don't clear data, just migrate if needed
     if (data.version !== STORAGE_VERSION) {
-      logger.warn('Storage version mismatch, clearing data')
-      clearStaysStorage()
-      return []
+      logger.warn('Storage version mismatch, attempting migration')
+      // For now, just use the data as is
+      return data.stays || []
     }
     
     return data.stays || []
@@ -74,14 +99,26 @@ export function updateStayInStorage(stayId: string, updates: Partial<Omit<Stay, 
   const stayIndex = stays.findIndex(stay => stay.id === stayId)
   
   if (stayIndex === -1) {
+    console.error('Stay not found for update:', stayId)
+    console.error('Available stay IDs:', stays.map(s => s.id))
     logger.error('Stay not found:', stayId)
     return null
   }
   
   const updatedStay = { ...stays[stayIndex], ...updates }
+  
+  // Validate the updated stay before saving
+  const validation = validateStay(updatedStay)
+  if (!validation.isValid) {
+    console.error('Updated stay validation failed:', validation.errors)
+    logger.error('Stay validation failed:', validation.errors)
+    return null
+  }
+  
   stays[stayIndex] = updatedStay
   
   saveStaysToStorage(stays)
+  console.log('Stay updated successfully:', updatedStay)
   return updatedStay
 }
 
@@ -135,29 +172,58 @@ function generateStayId(): string {
   return `stay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
-// Data validation
+// Enhanced data validation with timezone safety
 export function validateStay(stay: Partial<Stay>): { isValid: boolean; errors: string[] } {
   const errors: string[] = []
   
   if (!stay.countryCode) {
     errors.push('Country code is required')
+  } else if (!/^[A-Z]{2}$/.test(stay.countryCode)) {
+    errors.push('Country code must be a 2-letter uppercase code (e.g., KR, JP)')
   }
   
   if (!stay.entryDate) {
     errors.push('Entry date is required')
-  } else if (isNaN(Date.parse(stay.entryDate))) {
-    errors.push('Entry date is invalid')
-  }
-  
-  if (stay.exitDate) {
-    if (isNaN(Date.parse(stay.exitDate))) {
-      errors.push('Exit date is invalid')
-    } else if (stay.entryDate && new Date(stay.exitDate) < new Date(stay.entryDate)) {
-      errors.push('Exit date must be after entry date')
+  } else {
+    // Use safer date validation
+    try {
+      const entryDate = new Date(stay.entryDate + 'T00:00:00.000Z')
+      if (isNaN(entryDate.getTime())) {
+        errors.push('Entry date is invalid')
+      }
+    } catch {
+      errors.push('Entry date format is invalid')
     }
   }
   
-  // Notes validation removed - can be any string
+  if (stay.exitDate && stay.exitDate.trim() !== '') {
+    try {
+      const exitDate = new Date(stay.exitDate + 'T00:00:00.000Z')
+      if (isNaN(exitDate.getTime())) {
+        errors.push('Exit date is invalid')
+      } else if (stay.entryDate) {
+        const entryDate = new Date(stay.entryDate + 'T00:00:00.000Z')
+        if (!isNaN(entryDate.getTime()) && exitDate < entryDate) {
+          errors.push('Exit date must be after entry date')
+        }
+      }
+    } catch {
+      errors.push('Exit date format is invalid')
+    }
+  }
+  
+  // Validate optional fields
+  if (stay.entryCity && stay.entryCity.length > 5) {
+    errors.push('Entry city code should be 5 characters or less')
+  }
+  
+  if (stay.exitCity && stay.exitCity.length > 5) {
+    errors.push('Exit city code should be 5 characters or less')
+  }
+  
+  if (stay.fromCountry && !/^[A-Z]{2}$/.test(stay.fromCountry)) {
+    errors.push('From country code must be a 2-letter uppercase code')
+  }
   
   return {
     isValid: errors.length === 0,

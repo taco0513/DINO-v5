@@ -86,3 +86,40 @@ textarea:focus {
     min-height: 44px;
   }
 }
+
+/* Fix for input fields on mobile/narrow screens */
+@layer base {
+  input[type="text"],
+  input[type="email"],
+  input[type="date"],
+  input[type="number"],
+  textarea,
+  select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    touch-action: manipulation;
+  }
+  
+  /* Ensure modal inputs work on all screen sizes */
+  .fixed input,
+  .fixed textarea,
+  .fixed select {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+  }
+  
+  /* Fix for z-index stacking context issues */
+  .fixed[style*="z-index: 9999"] {
+    isolation: isolate;
+  }
+  
+  /* Ensure inputs in modals are always interactive */
+  [role="dialog"] input,
+  [role="dialog"] textarea,
+  [role="dialog"] select {
+    pointer-events: auto !important;
+  }
+}

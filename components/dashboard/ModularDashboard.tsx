@@ -40,6 +40,8 @@ import TableWidget from './TableWidget'
 import { Stay } from '@/lib/types'
 import { getStays } from '@/lib/supabase/stays'
 import { countries } from '@/lib/data/countries-and-airports'
+import { calculateAllVisaStatuses, type VisaCalculationContext } from '@/lib/visa-calculations/visa-engine'
+import { useUser } from '@/lib/context/UserContext'
 
 // Import grid layout styles
 import 'react-grid-layout/css/styles.css'
@@ -54,6 +56,7 @@ interface ModularDashboardProps {
 
 export default function ModularDashboard({ stays: initialStays, onLayoutChange }: ModularDashboardProps) {
   const theme = useTheme()
+  const { userEmail, nationality } = useUser()
   const [widgets, setWidgets] = useState<DashboardWidget[]>(DEFAULT_WIDGETS)
   const [isLocked, setIsLocked] = useState(false)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -94,15 +97,15 @@ export default function ModularDashboard({ stays: initialStays, onLayoutChange }
         minH: w.minH || 2,
         static: isLocked
       })),
-      xs: widgetList.map(w => ({
+      xs: widgetList.map((w, index) => ({
         i: w.id,
         x: 0,
-        y: w.y,
+        y: index * (w.h || 2), // Stack vertically on mobile
         w: 4,
         h: w.h,
         minW: 4,
         minH: w.minH || 2,
-        static: isLocked
+        static: true // Always locked on mobile for better UX
       }))
     }
   }
@@ -143,21 +146,78 @@ export default function ModularDashboard({ stays: initialStays, onLayoutChange }
     
     // Find ongoing stay for visa days
     const ongoingStay = stays.find(s => !s.exitDate)
-    const currentCountry = ongoingStay ? countries.find(c => c.code === ongoingStay.countryCode) : null
     
-    // Calculate visa days remaining (simplified - you'd want real visa logic here)
-    const visaDaysRemaining = ongoingStay ? '45 days' : 'N/A'
+    // Calculate actual visa days remaining using visa engine
+    let visaDaysRemaining = 'N/A'
+    let visaDaysStatus: 'safe' | 'warning' | 'critical' | 'exceeded' = 'safe'
     
-    // Next planned trip (placeholder)
-    const nextTrip = 'Thailand - Feb 15'
+    if (ongoingStay) {
+      const context: VisaCalculationContext = {
+        nationality,
+        userEmail: userEmail
+      }
+      const visaStatuses = calculateAllVisaStatuses(stays, context)
+      const currentStatus = visaStatuses.find(s => s.countryCode === ongoingStay.countryCode)
+      
+      if (currentStatus) {
+        visaDaysRemaining = `${currentStatus.daysRemaining} days`
+        visaDaysStatus = currentStatus.status
+      }
+    }
+    
+    // Calculate year-over-year changes
+    const currentYear = new Date().getFullYear()
+    const lastYear = currentYear - 1
+    
+    const currentYearDays = stays
+      .filter(s => new Date(s.entryDate).getFullYear() === currentYear)
+      .reduce((sum, stay) => {
+        const days = stay.exitDate 
+          ? Math.ceil((new Date(stay.exitDate).getTime() - new Date(stay.entryDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
+          : Math.ceil((new Date().getTime() - new Date(stay.entryDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
+        return sum + days
+      }, 0)
+    
+    const lastYearDays = stays
+      .filter(s => new Date(s.entryDate).getFullYear() === lastYear)
+      .reduce((sum, stay) => {
+        const days = stay.exitDate 
+          ? Math.ceil((new Date(stay.exitDate).getTime() - new Date(stay.entryDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
+          : Math.ceil((new Date().getTime() - new Date(stay.entryDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
+        return sum + days
+      }, 0)
+    
+    const daysChange = lastYearDays > 0 
+      ? Math.round(((currentYearDays - lastYearDays) / lastYearDays) * 100)
+      : currentYearDays > 0 ? 100 : 0
+    
+    const currentYearCountries = new Set(
+      stays
+        .filter(s => new Date(s.entryDate).getFullYear() === currentYear)
+        .map(s => s.countryCode)
+    ).size
+    
+    const lastYearCountries = new Set(
+      stays
+        .filter(s => new Date(s.entryDate).getFullYear() === lastYear)
+        .map(s => s.countryCode)
+    ).size
+    
+    const countriesChange = lastYearCountries > 0
+      ? Math.round(((currentYearCountries - lastYearCountries) / lastYearCountries) * 100)
+      : currentYearCountries > 0 ? 100 : 0
     
     return {
       totalDays,
       uniqueCountries,
       visaDaysRemaining,
-      nextTrip
+      visaDaysStatus,
+      currentYearDays,
+      daysChange,
+      currentYearCountries,
+      countriesChange
     }
-  }, [stays])
+  }, [stays, nationality, userEmail])
   
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: any) => {
     setLayouts(allLayouts)
@@ -219,7 +279,7 @@ export default function ModularDashboard({ stays: initialStays, onLayoutChange }
             kpiCardData = {
               label: 'Total Travel Days',
               value: kpiData.totalDays,
-              change: 12,
+              change: kpiData.daysChange,
               changeLabel: 'vs last year',
               color: 'primary'
             }
@@ -228,8 +288,8 @@ export default function ModularDashboard({ stays: initialStays, onLayoutChange }
             kpiCardData = {
               label: 'Countries Visited',
               value: kpiData.uniqueCountries,
-              change: 25,
-              changeLabel: 'this year',
+              change: kpiData.countriesChange,
+              changeLabel: 'vs last year',
               color: 'success'
             }
             break
@@ -237,13 +297,17 @@ export default function ModularDashboard({ stays: initialStays, onLayoutChange }
             kpiCardData = {
               label: 'Visa Days Remaining',
               value: kpiData.visaDaysRemaining,
-              color: 'warning'
+              color: kpiData.visaDaysStatus === 'exceeded' ? 'error' :
+                     kpiData.visaDaysStatus === 'critical' ? 'error' :
+                     kpiData.visaDaysStatus === 'warning' ? 'warning' : 'success'
             }
             break
           case 'kpi-next-trip':
             kpiCardData = {
-              label: 'Next Trip',
-              value: kpiData.nextTrip,
+              label: 'Current Year Days',
+              value: `${kpiData.currentYearDays} days`,
+              change: kpiData.currentYearCountries,
+              changeLabel: 'countries this year',
               color: 'info'
             }
             break

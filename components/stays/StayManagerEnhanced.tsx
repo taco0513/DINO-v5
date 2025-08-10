@@ -130,10 +130,35 @@ export default function StayManagerEnhanced({ countries, selectedCountries, onSt
         data = loadStaysFromStorage()
       }
       
-      // Sort by entry date (newest first)
-      const sortedStays = data.sort((a, b) => 
-        new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()
+      // Filter out invalid stays
+      const validData = data.filter(stay => 
+        stay && 
+        stay.countryCode && 
+        stay.entryDate &&
+        stay.id &&
+        stay.countryCode !== 'MISSING' &&
+        stay.entryDate !== 'MISSING'
       )
+      
+      if (validData.length < data.length) {
+        console.warn(`Filtered out ${data.length - validData.length} invalid stays`)
+        // Save cleaned data back
+        saveStaysToStorage(validData)
+      }
+      
+      // Sort by entry date (newest first)
+      const sortedStays = validData.sort((a, b) => {
+        try {
+          const dateA = new Date(a.entryDate)
+          const dateB = new Date(b.entryDate)
+          if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+            return 0
+          }
+          return dateB.getTime() - dateA.getTime()
+        } catch {
+          return 0
+        }
+      })
       setStays(sortedStays)
     } catch (error) {
       console.error('Failed to load stays:', error)

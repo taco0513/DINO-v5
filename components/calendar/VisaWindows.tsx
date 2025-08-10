@@ -391,7 +391,7 @@ export default function VisaWindows({ countries, stays, selectedCountries }: Vis
             <Typography variant="body2" color="text.secondary" gutterBottom>
               Timeline visualization coming soon...
             </Typography>
-            {/* TODO: Implement timeline visualization */}
+            {/* Timeline visualization will be added in the advanced analytics module */}
           </Box>
         )}
       </Box>

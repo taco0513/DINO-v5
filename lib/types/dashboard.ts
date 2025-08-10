@@ -56,13 +56,25 @@ export interface KPIData {
 // Chart data structure
 export interface ChartData {
   type: 'line' | 'bar' | 'pie' | 'donut' | 'area'
-  data: any[] // Chart.js data format
-  options?: any // Chart.js options
+  data: Record<string, unknown>[] // Chart.js data format
+  options?: Record<string, unknown> // Chart.js options
 }
 
-// Default dashboard layouts
-export const DEFAULT_BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480 }
-export const DEFAULT_COLS = { lg: 12, md: 8, sm: 6, xs: 4 }
+// Default dashboard layouts - improved for better responsive behavior
+export const DEFAULT_BREAKPOINTS = { 
+  lg: 1200,  // Desktop
+  md: 996,   // Small desktop/tablet landscape
+  sm: 768,   // Tablet portrait
+  xs: 480,   // Mobile
+  xxs: 0     // Extra small mobile
+}
+export const DEFAULT_COLS = { 
+  lg: 12,    // Desktop - full grid
+  md: 10,    // Small desktop - slightly reduced
+  sm: 6,     // Tablet - half grid
+  xs: 4,     // Mobile - quarter grid
+  xxs: 2     // Extra small - minimal grid
+}
 export const DEFAULT_ROW_HEIGHT = 60 // Based on 8dp grid (60px ≈ 7.5 * 8dp)
 
 // Default widgets for DINO dashboard

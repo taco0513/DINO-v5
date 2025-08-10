@@ -181,11 +181,12 @@ export default function CountrySelect({
           className={`
             w-full px-3 py-2 pr-10 border rounded-lg 
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
-            transition-all duration-300
+            transition-all duration-300 pointer-events-auto
             ${error ? 'border-red-500' : 'border-gray-300'}
             ${className}
           `}
           autoComplete="off"
+          style={{ pointerEvents: 'auto' }}
         />
         
         {/* Dropdown arrow */}
@@ -213,7 +214,7 @@ export default function CountrySelect({
 
       {/* Dropdown list */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-hidden">
+        <div className="absolute z-[10000] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-hidden">
           {displayCountries.length > 0 ? (
             <ul 
               ref={listRef}

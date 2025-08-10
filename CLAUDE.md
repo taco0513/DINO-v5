@@ -180,6 +180,10 @@ CREATE INDEX idx_stays_visa_type ON stays(visa_type);
 - **User-Specific Rules**: Dynamic visa calculations based on user email
 - **TypeScript Migration**: Complete type safety overhaul with zero compilation errors
 - **Performance Optimization**: Efficient data loading with intelligent caching strategy
+- **Responsive Input Fix**: Resolved z-index conflicts preventing input on narrow screens
+- **Mobile Optimization**: Added viewport meta tags and touch-action CSS for better mobile experience
+- **Modal Accessibility**: Added ARIA attributes (role="dialog", aria-modal) for improved accessibility
+- **Date Conflict Resolution**: Automatic adjustment of overlapping travel dates
 
 ## AI Workflow Integration
 

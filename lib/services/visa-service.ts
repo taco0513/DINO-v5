@@ -19,6 +19,19 @@ import {
 import { Country } from '@/lib/types'
 import { logger } from '@/lib/utils/logger'
 
+// Database record interface for visa_information table
+interface VisaInformationRecord {
+  id: string
+  country_code: string
+  visa_type: VisaType
+  data: VisaData
+  last_updated: string
+  updated_by: string
+  source: 'official' | 'community' | 'ai_generated'
+  is_verified: boolean
+  created_at?: string
+}
+
 const VISA_STORAGE_KEY = 'visa_information_cache'
 const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
@@ -390,7 +403,7 @@ export class VisaService {
   /**
    * Parse visa information from database
    */
-  private parseVisaInfo(data: any): VisaInformation {
+  private parseVisaInfo(data: VisaInformationRecord): VisaInformation {
     return {
       id: data.id,
       countryCode: data.country_code,
