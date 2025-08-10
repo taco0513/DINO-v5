@@ -168,15 +168,22 @@ export default function NavigationSidebar() {
       </Box>
 
       {/* Add Stay Button */}
-      <Box sx={{ px: 2, pt: 2 }}>
+      <Box sx={{ 
+        px: 2, 
+        pt: 2,
+        display: 'flex',
+        justifyContent: isCollapsed ? 'center' : 'stretch'
+      }}>
         <Fab
           color="primary"
           onClick={handleModalOpen}
           sx={{
-            width: isCollapsed ? 40 : '100%',
+            width: isCollapsed ? 48 : '100%',
+            height: isCollapsed ? 48 : 48,
+            minWidth: isCollapsed ? 48 : 'auto',
             borderRadius: isCollapsed ? '50%' : 2,
             boxShadow: 2,
-            transition: theme.transitions.create(['width', 'border-radius'], {
+            transition: theme.transitions.create(['width', 'height', 'border-radius'], {
               duration: theme.transitions.duration.short,
             }),
             '&:hover': {
