@@ -116,7 +116,7 @@ export const DEFAULT_WIDGETS: DashboardWidget[] = [
   {
     id: 'kpi-next-trip',
     type: 'kpi',
-    title: 'Next Trip',
+    title: 'Current Year Days',
     x: 9,
     y: 0,
     w: 3,
