@@ -25,7 +25,8 @@ import {
   Menu as MenuIcon,
   Add as AddIcon,
   Feedback as FeedbackIcon,
-  ChevronLeft as ChevronLeftIcon
+  ChevronLeft as ChevronLeftIcon,
+  MenuBook as GuideIcon
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
@@ -94,6 +95,12 @@ export default function NavigationSidebar() {
       text: 'Calendar', 
       icon: <EventIcon />, 
       path: '/calendar',
+      visible: true
+    },
+    { 
+      text: 'Travel Guide', 
+      icon: <GuideIcon />, 
+      path: '/guide',
       visible: true
     },
     { 
