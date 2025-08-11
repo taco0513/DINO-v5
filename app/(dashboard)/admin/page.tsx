@@ -387,7 +387,8 @@ export default function CommunityFeedbackDashboard() {
   const unreadNotifications = notifications.filter(n => !n.isRead).length
 
   return (
-    <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
+    <>
+      <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
       <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
         <Box sx={{ p: 3 }}>
           {/* Header */}
@@ -789,9 +790,10 @@ export default function CommunityFeedbackDashboard() {
         </Card>
         </Box>
       </Box>
+    </Box>
 
-      {/* Report Detail Dialog */}
-      <Dialog open={viewDialog} onClose={() => setViewDialog(false)} maxWidth="md" fullWidth>
+    {/* Report Detail Dialog */}
+    <Dialog open={viewDialog} onClose={() => setViewDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           Report Details
         </DialogTitle>
@@ -937,6 +939,6 @@ export default function CommunityFeedbackDashboard() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   )
 }
