@@ -11,6 +11,9 @@ import dynamic from 'next/dynamic'
 const DataStatusIndicator = dynamic(() => import('@/components/debug/DataStatusIndicator'), {
   ssr: false
 })
+const SyncButton = dynamic(() => import('@/components/debug/SyncButton'), {
+  ssr: false
+})
 
 export default function DashboardLayout({
   children,
@@ -36,8 +39,8 @@ export default function DashboardLayout({
 
     window.addEventListener('storage', handleStorageChange)
     
-    // Also check periodically for changes within the same tab
-    const interval = setInterval(checkSidebarState, 100)
+    // Check less frequently for changes within the same tab
+    const interval = setInterval(checkSidebarState, 2000) // Changed from 100ms to 2000ms
 
     return () => {
       window.removeEventListener('storage', handleStorageChange)
@@ -73,6 +76,8 @@ export default function DashboardLayout({
       <MobileFAB />
       {/* Data Status Indicator for debugging - visible on production */}
       <DataStatusIndicator />
+      {/* Sync button - temporary for initial sync */}
+      <SyncButton />
     </Box>
   )
 }

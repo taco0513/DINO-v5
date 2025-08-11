@@ -16,7 +16,7 @@ export default function DataStatusIndicator() {
 
   useEffect(() => {
     checkDataStatus()
-    const interval = setInterval(checkDataStatus, 10000) // Check every 10 seconds
+    const interval = setInterval(checkDataStatus, 30000) // Check every 30 seconds instead of 10
     return () => clearInterval(interval)
   }, [])
 
