@@ -387,8 +387,9 @@ export default function CommunityFeedbackDashboard() {
   const unreadNotifications = notifications.filter(n => !n.isRead).length
 
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: 'background.default', minHeight: '100vh' }}>
-      <Box sx={{ p: 3 }}>
+    <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
+      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+        <Box sx={{ p: 3 }}>
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -935,6 +936,8 @@ export default function CommunityFeedbackDashboard() {
           </Button>
         </DialogActions>
       </Dialog>
+        </Box>
+      </Box>
     </Box>
   )
 }

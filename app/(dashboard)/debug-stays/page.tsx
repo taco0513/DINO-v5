@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Box, Typography, Button, Card, Stack, Alert, Paper } from '@mui/material'
+import { Box, Typography, Button, Card, Stack, Alert, Paper, useTheme } from '@mui/material'
 import { getStays, addStay } from '@/lib/supabase/stays'
 import { loadStaysFromStorage, saveStaysToStorage, addStayToStorage } from '@/lib/storage/stays-storage'
 import { createClient } from '@/lib/supabase/client'
@@ -13,6 +13,7 @@ export default function DebugStaysPage() {
   const [error, setError] = useState<string>('')
   const [success, setSuccess] = useState<string>('')
   const supabase = createClient()
+  const theme = useTheme()
 
   useEffect(() => {
     checkAuthAndLoadData()
@@ -110,7 +111,9 @@ export default function DebugStaysPage() {
   }
 
   return (
-    <Box sx={{ p: 4 }}>
+    <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
+      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+        <Box sx={{ p: 4 }}>
       <Typography variant="h4" gutterBottom>
         🔍 Debug Stays Storage
       </Typography>
@@ -185,6 +188,8 @@ export default function DebugStaysPage() {
           If Supabase fails, data is saved to localStorage. On next load, it tries Supabase first, then falls back to localStorage.
         </Typography>
       </Card>
+        </Box>
+      </Box>
     </Box>
   )
 }

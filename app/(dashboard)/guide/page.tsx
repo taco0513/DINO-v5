@@ -177,8 +177,8 @@ export default function TravelGuidePage() {
 
   return (
     <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
-        <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-          <Box sx={{ p: 3 }}>
+      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+        <Box sx={{ p: 3 }}>
             {/* Header - Material Design Style */}
             <Box sx={{ mb: 4 }}>
               <Typography 

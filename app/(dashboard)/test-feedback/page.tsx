@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Box, Typography, Button, Alert, Paper } from '@mui/material'
+import { Box, Typography, Button, Alert, Paper, useTheme } from '@mui/material'
 import FeedbackButton from '@/components/feedback/FeedbackButton'
 import { feedbackService } from '@/lib/services/feedback-service'
 
 export default function TestFeedbackPage() {
   const [message, setMessage] = useState<string>('')
   const [error, setError] = useState<string>('')
+  const theme = useTheme()
 
   const handleFeedbackSubmit = async (report: any) => {
     try {
@@ -21,7 +22,9 @@ export default function TestFeedbackPage() {
   }
 
   return (
-    <Box sx={{ p: 4, maxWidth: 800, mx: 'auto' }}>
+    <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
+      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+        <Box sx={{ p: 4, maxWidth: 800, mx: 'auto' }}>
       <Typography variant="h4" gutterBottom>
         🧪 Feedback System Test
       </Typography>
@@ -113,6 +116,8 @@ export default function TestFeedbackPage() {
           />
         </Box>
       </Paper>
+        </Box>
+      </Box>
     </Box>
   )
 }
