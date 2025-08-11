@@ -33,7 +33,7 @@ import { User } from '@supabase/supabase-js'
 import AddStayModalEnhanced from '@/components/stays/AddStayModalEnhanced'
 import { countries } from '@/lib/data/countries-and-airports'
 
-const drawerWidth = 280
+const drawerWidth = 250
 const collapsedDrawerWidth = 72
 
 export default function NavigationSidebar() {

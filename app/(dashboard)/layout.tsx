@@ -14,13 +14,13 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [sidebarWidth, setSidebarWidth] = useState(280)
+  const [sidebarWidth, setSidebarWidth] = useState(250)
 
   useEffect(() => {
     // Check localStorage for collapsed state
     const checkSidebarState = () => {
       const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true'
-      setSidebarWidth(isCollapsed ? 72 : 280)
+      setSidebarWidth(isCollapsed ? 72 : 250)
     }
 
     // Initial check
@@ -57,11 +57,10 @@ export default function DashboardLayout({
           overflow: 'auto',
           width: '100%',
           minWidth: 0, // Allow flex item to shrink below content size
-          // Add margin for fixed sidebar on desktop
-          ml: { xs: 0, lg: `${sidebarWidth}px` },
+          // Sidebar width is handled by Drawer component
+          ml: 0,
           // Add padding for mobile menu button on small screens
-          pt: { xs: 8, lg: 0 },
-          transition: 'margin-left 0.2s ease'
+          pt: { xs: 8, lg: 0 }
         }}
       >
         {children}
