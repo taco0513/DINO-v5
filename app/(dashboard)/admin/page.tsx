@@ -787,6 +787,7 @@ export default function CommunityFeedbackDashboard() {
             </Box>
           </TabPanel>
         </Card>
+        </Box>
       </Box>
 
       {/* Report Detail Dialog */}
@@ -936,8 +937,6 @@ export default function CommunityFeedbackDashboard() {
           </Button>
         </DialogActions>
       </Dialog>
-        </Box>
-      </Box>
     </Box>
   )
 }
