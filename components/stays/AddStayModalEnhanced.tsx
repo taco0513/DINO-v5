@@ -229,28 +229,8 @@ export default function AddStayModalEnhanced({
       
       console.log('✅ Successfully saved to Supabase')
 
-      // Show success state with auto-resolution notification
+      // Show success state
       setSavedSuccess(true)
-      
-      // Show notification if dates were auto-resolved
-      if (wasAutoResolved) {
-        // Check if any existing stays were modified
-        const modifiedStays = finalStays.filter((stay, index) => {
-          const original = existingStays[index]
-          return original && (
-            stay.exitDate !== original.exitDate ||
-            stay.entryDate !== original.entryDate
-          )
-        })
-        
-        if (modifiedStays.length > 0) {
-          const modifiedCountries = modifiedStays.map(s => s.countryCode).join(', ')
-          setAutoResolvedMessage(`Previous stay(s) in ${modifiedCountries} were automatically adjusted. Exit dates set to match travel day.`)
-        } else {
-          setAutoResolvedMessage('Travel dates were automatically adjusted to resolve conflicts')
-        }
-        console.log('Travel dates were automatically adjusted to resolve conflicts')
-      }
       
       // Reset form
       setFormData({
