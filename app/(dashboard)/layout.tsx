@@ -57,8 +57,8 @@ export default function DashboardLayout({
           overflow: 'auto',
           width: '100%',
           minWidth: 0, // Allow flex item to shrink below content size
-          // Sidebar width is handled by Drawer component
-          ml: 0,
+          // Add margin to account for fixed sidebar
+          ml: { xs: 0, lg: `${sidebarWidth}px` },
           // Add padding for mobile menu button on small screens
           pt: { xs: 8, lg: 0 }
         }}
