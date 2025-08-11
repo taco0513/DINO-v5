@@ -5,6 +5,12 @@ import { Box } from '@mui/material'
 import NavigationSidebar from '@/components/sidebar/NavigationSidebar'
 import OfflineIndicator from '@/components/ui/OfflineIndicator'
 import MobileFAB from '@/components/ui/MobileFAB'
+import dynamic from 'next/dynamic'
+
+// Conditionally load debug indicator
+const DataStatusIndicator = dynamic(() => import('@/components/debug/DataStatusIndicator'), {
+  ssr: false
+})
 
 export default function DashboardLayout({
   children,
@@ -65,6 +71,8 @@ export default function DashboardLayout({
       </Box>
       <OfflineIndicator />
       <MobileFAB />
+      {/* Data Status Indicator for debugging - visible on production */}
+      <DataStatusIndicator />
     </Box>
   )
 }

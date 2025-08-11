@@ -43,6 +43,8 @@ export default function Home() {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([])
   const [stays, setStays] = useState<Stay[]>([])
   const [loading, setLoading] = useState(true)
+  const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'none'>('none')
+  const [lastError, setLastError] = useState<string | null>(null)
   const theme = useTheme()
 
   const loadAllStays = useCallback(async () => {
@@ -57,6 +59,8 @@ export default function Home() {
         
         if (data.length > 0) {
           logger.info(`✅ Loaded ${data.length} stays from Supabase`)
+          setDataSource('supabase')
+          setLastError(null)
           // Save to localStorage as backup
           saveStaysToStorage(data)
         } else {
@@ -65,13 +69,22 @@ export default function Home() {
           data = loadStaysFromStorage()
           if (data.length > 0) {
             logger.info(`💾 Using ${data.length} stays from localStorage backup`)
+            setDataSource('localStorage')
+            setLastError('Supabase is empty, using local backup')
+          } else {
+            setDataSource('none')
           }
         }
       } catch (supabaseError) {
-        logger.warn('⚠️ Supabase unavailable, using localStorage:', supabaseError)
+        const errorMsg = supabaseError instanceof Error ? supabaseError.message : 'Unknown error'
+        logger.warn('⚠️ Supabase unavailable, using localStorage:', errorMsg)
+        setLastError(`Supabase error: ${errorMsg}`)
         data = loadStaysFromStorage()
         if (data.length > 0) {
           logger.info(`💾 Using ${data.length} stays from localStorage`)
+          setDataSource('localStorage')
+        } else {
+          setDataSource('none')
         }
       }
       
@@ -104,7 +117,9 @@ export default function Home() {
       
       setStays(data)
     } catch (error) {
-      logger.error('Failed to load stays:', error)
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+      logger.error('Failed to load stays:', errorMsg)
+      setLastError(`Failed to load data: ${errorMsg}`)
       setStays([])
     } finally {
       setLoading(false)
@@ -196,6 +211,36 @@ export default function Home() {
         {/* Main Content Area */}
         <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
           <Container maxWidth="xl" sx={{ py: theme.spacing(3) }}>
+          
+            {/* Data Source Indicator */}
+            {(dataSource !== 'supabase' || lastError) && (
+              <Paper 
+                sx={{ 
+                  p: 2, 
+                  mb: 2, 
+                  backgroundColor: dataSource === 'localStorage' ? '#fff3cd' : '#f8d7da',
+                  borderColor: dataSource === 'localStorage' ? '#ffc107' : '#dc3545',
+                  borderWidth: 1,
+                  borderStyle: 'solid'
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Box>
+                    {dataSource === 'localStorage' ? '⚠️' : '❌'}
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" fontWeight="bold">
+                      {dataSource === 'localStorage' ? 'Using Local Storage' : 'No Data Available'}
+                    </Typography>
+                    {lastError && (
+                      <Typography variant="caption" color="text.secondary">
+                        {lastError}
+                      </Typography>
+                    )}
+                  </Box>
+                </Stack>
+              </Paper>
+            )}
           
             <Stack spacing={3}>
               {/* Modular Dashboard */}

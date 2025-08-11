@@ -309,8 +309,18 @@ export default function AddStayModalEnhanced({
         exitCity: formData.exitCity || undefined,
         visaType: formData.visaType as Stay['visaType'],
         notes: formData.notes || undefined
+      }).then(() => {
+        console.log('✅ Successfully synced to Supabase')
       }).catch(supabaseError => {
-        console.warn('Failed to sync with Supabase (non-critical):', supabaseError)
+        console.warn('⚠️ Failed to sync with Supabase (data saved locally):', supabaseError)
+        // Show user-friendly warning (non-blocking)
+        setErrors(prev => ({ 
+          ...prev, 
+          general: 'Note: Data saved locally. Cloud sync pending.' 
+        }))
+        setTimeout(() => {
+          setErrors(prev => ({ ...prev, general: '' }))
+        }, 5000)
       })
 
       // Show success state with auto-resolution notification
@@ -366,9 +376,10 @@ export default function AddStayModalEnhanced({
 
     } catch (error) {
       console.error('Failed to add stay:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       setErrors(prev => ({ 
         ...prev, 
-        general: 'Failed to save stay record. Please try again.' 
+        general: `Failed to save stay record: ${errorMessage}. Please try again.` 
       }))
     } finally {
       setLoading(false)

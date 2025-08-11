@@ -2,7 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    // Keep console.error and console.warn in production for debugging
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
   },
   modularizeImports: {
     '@mui/material': {
