@@ -390,38 +390,38 @@ export default function CommunityFeedbackDashboard() {
     <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.default }}>
       <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
         <Box sx={{ p: 3 }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <FeedbackIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-            <Box>
-              <Typography variant="h4" component="h1" fontWeight="bold">
-                Community Feedback Dashboard
-              </Typography>
-              <Typography variant="subtitle1" color="text.secondary">
-                Manage visa information reports and user feedback • Logged in as: {userEmail}
-              </Typography>
+          {/* Header */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <FeedbackIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+              <Box>
+                <Typography variant="h4" component="h1" fontWeight="bold">
+                  Community Feedback Dashboard
+                </Typography>
+                <Typography variant="subtitle1" color="text.secondary">
+                  Manage visa information reports and user feedback • Logged in as: {userEmail}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="Unread notifications">
+                <IconButton>
+                  <Badge badgeContent={unreadNotifications} color="error">
+                    <NotificationsIcon />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={loadFeedbackData}
+                sx={{ textTransform: 'none' }}
+              >
+                Refresh
+              </Button>
             </Box>
           </Box>
-
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Tooltip title="Unread notifications">
-              <IconButton>
-                <Badge badgeContent={unreadNotifications} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-            </Tooltip>
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={loadFeedbackData}
-              sx={{ textTransform: 'none' }}
-            >
-              Refresh
-            </Button>
-          </Box>
-        </Box>
 
         {/* Stats Overview */}
         <Box sx={{ 
