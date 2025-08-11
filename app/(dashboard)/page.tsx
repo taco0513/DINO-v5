@@ -34,7 +34,7 @@ const StaysList = dynamic(() => import('@/components/stays/StaysList'), {
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import { Country, Stay } from '@/lib/types'
 import { getStays } from '@/lib/supabase/stays'
-import { loadStaysFromStorage, saveStaysToStorage } from '@/lib/storage/stays-storage'
+// Remove localStorage imports - use Supabase only
 import { detectDateConflicts, autoResolveConflicts } from '@/lib/utils/date-conflict-resolver'
 import { countries } from '@/lib/data/countries-and-airports'
 import { logger } from '@/lib/utils/logger'
@@ -61,31 +61,17 @@ export default function Home() {
           logger.info(`✅ Loaded ${data.length} stays from Supabase`)
           setDataSource('supabase')
           setLastError(null)
-          // Save to localStorage as backup
-          saveStaysToStorage(data)
+          // Don't save to localStorage anymore
         } else {
-          logger.info('📊 No data in Supabase, checking localStorage...')
-          // If Supabase is empty, check localStorage
-          data = loadStaysFromStorage()
-          if (data.length > 0) {
-            logger.info(`💾 Using ${data.length} stays from localStorage backup`)
-            setDataSource('localStorage')
-            setLastError('Supabase is empty, using local backup')
-          } else {
-            setDataSource('none')
-          }
+          logger.info('📊 No data in Supabase')
+          setDataSource('none')
+          setLastError('No travel records yet')
         }
       } catch (supabaseError) {
         const errorMsg = supabaseError instanceof Error ? supabaseError.message : 'Unknown error'
-        logger.warn('⚠️ Supabase unavailable, using localStorage:', errorMsg)
-        setLastError(`Supabase error: ${errorMsg}`)
-        data = loadStaysFromStorage()
-        if (data.length > 0) {
-          logger.info(`💾 Using ${data.length} stays from localStorage`)
-          setDataSource('localStorage')
-        } else {
-          setDataSource('none')
-        }
+        logger.warn('⚠️ Supabase unavailable:', errorMsg)
+        setLastError(`Database connection error: ${errorMsg}`)
+        setDataSource('none')  
       }
       
       // Filter out invalid stays first
@@ -101,8 +87,7 @@ export default function Home() {
       if (validData.length < data.length) {
         logger.warn(`🧹 Filtered out ${data.length - validData.length} invalid stays`)
         data = validData
-        // Save cleaned data back to localStorage
-        saveStaysToStorage(data)
+        // Don't save to localStorage anymore
       }
       
       // Auto-resolve any date conflicts
@@ -110,8 +95,7 @@ export default function Home() {
       if (conflicts.some(c => c.severity === 'critical')) {
         logger.info('🔧 Auto-resolving', conflicts.length, 'date conflicts...')
         const resolvedStays = autoResolveConflicts(data)
-        // Update localStorage with resolved data
-        saveStaysToStorage(resolvedStays)
+        // Don't save to localStorage anymore
         data = resolvedStays
       }
       

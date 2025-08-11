@@ -75,12 +75,7 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
         
         if (data.length > 0) {
           console.log(`✅ Loaded ${data.length} stays from Supabase`)
-          // Save to localStorage as backup
-          localStorage.setItem('dino-stays-data', JSON.stringify({
-            version: '1.0',
-            stays: data,
-            lastUpdated: new Date().toISOString()
-          }))
+          // Don't save to localStorage - use Supabase only
         } else {
           console.log('📊 No data in Supabase, checking localStorage...')
           // If Supabase is empty, check localStorage
@@ -123,14 +118,7 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
         return true
       })
       
-      // Save cleaned data back to storage
-      if (data.length > 0) {
-        localStorage.setItem('dino-stays-data', JSON.stringify({
-          version: '1.0',
-          stays: data,
-          lastUpdated: new Date().toISOString()
-        }))
-      }
+      // Don't save to localStorage anymore - use Supabase only
       
       // Check for date conflicts
       const conflicts = detectDateConflicts(data)
@@ -144,8 +132,7 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
         finalStays = resolvedStays
         setAutoResolved(true)
         
-        // Update localStorage with resolved data
-        localStorage.setItem('dino-v5-stays', JSON.stringify(finalStays))
+        // Don't update localStorage - use Supabase only
         
         console.log('🔧 Auto-resolved date conflicts:', conflicts.length, 'conflicts found')
       }
@@ -169,23 +156,12 @@ export default function StaysList({ countries, onStaysChange, onEditStay }: Stay
     }
 
     try {
-      // Delete from localStorage first
-      const success = deleteStayFromStorage(stayId)
+      // Delete from Supabase directly
+      await deleteStay(stayId)
       
-      if (success) {
-        setStays(prev => prev.filter(stay => stay.id !== stayId))
-        
-        // Try to sync with Supabase in background
-        try {
-          await deleteStay(stayId)
-        } catch (supabaseError) {
-          console.warn('Failed to sync deletion with Supabase:', supabaseError)
-        }
-        
-        onStaysChange()
-      } else {
-        throw new Error('Failed to delete stay from localStorage')
-      }
+      // Update local state
+      setStays(prev => prev.filter(stay => stay.id !== stayId))
+      onStaysChange()
     } catch (error) {
       console.error('Failed to delete stay:', error)
       alert('Failed to delete stay. Please try again.')

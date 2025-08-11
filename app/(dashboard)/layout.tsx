@@ -7,13 +7,7 @@ import OfflineIndicator from '@/components/ui/OfflineIndicator'
 import MobileFAB from '@/components/ui/MobileFAB'
 import dynamic from 'next/dynamic'
 
-// Conditionally load debug indicator
-const DataStatusIndicator = dynamic(() => import('@/components/debug/DataStatusIndicator'), {
-  ssr: false
-})
-const SyncButton = dynamic(() => import('@/components/debug/SyncButton'), {
-  ssr: false
-})
+// Debug components removed - using Supabase only now
 
 export default function DashboardLayout({
   children,
@@ -74,10 +68,6 @@ export default function DashboardLayout({
       </Box>
       <OfflineIndicator />
       <MobileFAB />
-      {/* Data Status Indicator for debugging - visible on production */}
-      <DataStatusIndicator />
-      {/* Sync button - temporary for initial sync */}
-      <SyncButton />
     </Box>
   )
 }

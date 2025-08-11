@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Stay, Country } from '@/lib/types'
-import { addStayToStorage, saveStaysToStorage } from '@/lib/storage/stays-storage'
 import { addStay } from '@/lib/supabase/stays'
 import { getAvailableVisaTypes } from '@/lib/visa-rules/visa-types'
 import { getCurrentUserEmail } from '@/lib/context/user'
-import { loadStaysFromStorage } from '@/lib/storage/stays-storage'
+import { getStays } from '@/lib/supabase/stays'
 import { autoResolveConflicts, detectDateConflicts, type ResolvedStay } from '@/lib/utils/date-conflict-resolver'
 import CountrySelect from '@/components/ui/CountrySelect'
 
@@ -76,19 +75,25 @@ export default function AddStayModalEnhanced({
   useEffect(() => {
     if (!isOpen) return
     
-    const stays = loadStaysFromStorage()
-    if (stays.length > 0) {
-      const lastStay = stays.sort((a, b) => 
-        new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()
-      )[0]
-      
-      if (lastStay?.countryCode && !formData.fromCountry) {
-        setFormData(prev => ({ 
-          ...prev, 
-          fromCountry: lastStay.countryCode 
-        }))
+    const loadLastStay = async () => {
+      try {
+        const stays = await getStays()
+        if (stays.length > 0) {
+          const lastStay = stays[0] // Already sorted by entry_date desc
+          
+          if (lastStay?.countryCode && !formData.fromCountry) {
+            setFormData(prev => ({ 
+              ...prev, 
+              fromCountry: lastStay.countryCode 
+            }))
+          }
+        }
+      } catch (error) {
+        console.warn('Could not load last stay:', error)
       }
     }
+    
+    loadLastStay()
   }, [isOpen])
 
   // Update visa type when country changes
@@ -203,7 +208,7 @@ export default function AddStayModalEnhanced({
     setErrors(prev => ({ ...prev, general: '' }))
 
     try {
-      // Create new stay object
+      // Create new stay object and save directly to Supabase
       const newStayData = {
         countryCode: formData.countryCode,
         fromCountry: formData.fromCountry || undefined,
@@ -215,113 +220,14 @@ export default function AddStayModalEnhanced({
         notes: formData.notes || undefined
       }
 
-      // Load existing stays and check for conflicts
-      const existingStays = loadStaysFromStorage()
+      // Save directly to Supabase
+      const newStay = await addStay(newStayData)
       
-      // Create temporary stay with ID for conflict detection
-      const tempStay: Stay = {
-        ...newStayData,
-        id: 'temp-' + Date.now()
-      }
-      
-      // Check for conflicts with new stay
-      const allStays = [...existingStays, tempStay]
-      const conflicts = detectDateConflicts(allStays)
-      
-      // If conflicts found, auto-resolve them
-      let finalStays = existingStays
-      let resolvedNewStay = newStayData
-      let wasAutoResolved = false
-      
-      if (conflicts.length > 0) {
-        console.log('Date conflicts detected, auto-resolving...')
-        const resolvedStays = autoResolveConflicts(allStays)
-        
-        // Find the resolved new stay and existing stays
-        const resolvedNewStayData = resolvedStays.find(s => s.id === tempStay.id)
-        if (resolvedNewStayData) {
-          resolvedNewStay = {
-            countryCode: resolvedNewStayData.countryCode,
-            fromCountry: resolvedNewStayData.fromCountry,
-            entryDate: resolvedNewStayData.entryDate,
-            exitDate: resolvedNewStayData.exitDate,
-            entryCity: resolvedNewStayData.entryCity,
-            exitCity: resolvedNewStayData.exitCity,
-            visaType: resolvedNewStayData.visaType,
-            notes: resolvedNewStayData.notes
-          }
-          wasAutoResolved = resolvedNewStayData.autoResolved || false
-        }
-        
-        // Update existing stays with resolved versions
-        // Make sure we only keep valid stays
-        finalStays = resolvedStays
-          .filter(s => s.id !== tempStay.id && s.countryCode && s.entryDate)
-          .map(s => ({
-            id: s.id,
-            countryCode: s.countryCode,
-            fromCountry: s.fromCountry,
-            entryDate: s.entryDate,
-            exitDate: s.exitDate,
-            entryCity: s.entryCity,
-            exitCity: s.exitCity,
-            visaType: s.visaType,
-            notes: s.notes
-          }))
-        
-        // Save resolved existing stays first
-        saveStaysToStorage(finalStays)
-      }
-
-      // Validate the new stay before saving
-      if (!resolvedNewStay.countryCode || !resolvedNewStay.entryDate) {
-        throw new Error('Invalid stay data: missing country or entry date')
-      }
-      
-      // Don't add the new stay again if we already saved all resolved stays
-      let newStay: Stay | null = null
-      
-      if (conflicts.length === 0) {
-        // No conflicts, add normally
-        newStay = addStayToStorage(resolvedNewStay)
-      } else {
-        // Conflicts were resolved, new stay is already in finalStays
-        // Just add it to the saved stays
-        newStay = {
-          ...resolvedNewStay,
-          id: `stay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        }
-        const allStaysWithNew = [...finalStays, newStay]
-        saveStaysToStorage(allStaysWithNew)
-      }
-
       if (!newStay) {
         throw new Error('Failed to save stay record')
       }
-
-      // Try to sync with Supabase in background
-      addStay({
-        countryCode: formData.countryCode,
-        fromCountry: formData.fromCountry || undefined,
-        entryDate: formData.entryDate,
-        exitDate: formData.exitDate || undefined,
-        entryCity: formData.entryCity || undefined,
-        exitCity: formData.exitCity || undefined,
-        visaType: formData.visaType as Stay['visaType'],
-        notes: formData.notes || undefined
-      }).then(() => {
-        console.log('✅ Successfully synced to Supabase')
-      }).catch(supabaseError => {
-        console.warn('⚠️ Failed to sync with Supabase (data saved locally):', supabaseError)
-        // Show user-friendly warning (non-blocking)
-        setErrors(prev => ({ 
-          ...prev, 
-          general: 'Note: Data saved locally. Cloud sync pending.' 
-        }))
-        setTimeout(() => {
-          setErrors(prev => ({ ...prev, general: '' }))
-        }, 5000)
-      })
+      
+      console.log('✅ Successfully saved to Supabase')
 
       // Show success state with auto-resolution notification
       setSavedSuccess(true)
