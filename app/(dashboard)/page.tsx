@@ -129,10 +129,10 @@ export default function Home() {
   useEffect(() => {
     loadAllStays()
     
-    // Set up an interval to check for updates every 5 seconds
-    const interval = setInterval(() => {
-      loadAllStays()
-    }, 5000)
+    // Remove aggressive auto-refresh - only reload on actual changes
+    // const interval = setInterval(() => {
+    //   loadAllStays()
+    // }, 5000)
     
     // Listen for storage events (when data changes in another tab)
     const handleStorageChange = (e: StorageEvent) => {
@@ -153,7 +153,7 @@ export default function Home() {
     window.addEventListener('stays-updated', handleStaysUpdate)
     
     return () => {
-      clearInterval(interval)
+      // clearInterval(interval) // Commented out since we removed the interval
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('stays-updated', handleStaysUpdate)
     }
